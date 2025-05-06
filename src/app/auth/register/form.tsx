@@ -134,7 +134,7 @@ const RegisterForm: React.FC = () => {
     return (
         <div className="container">
             <div className="row justify-content-center">
-                <div className="col-lg-6">
+                <div className="">
                     {signupview && flag !== "" && (
                         <div className="alert alert-danger text-center" role="alert">
                             {flag}
@@ -150,13 +150,13 @@ const RegisterForm: React.FC = () => {
                             />
                         </div>
                     ) : (
-                        <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
-                            <div className="mb-4">
+                        <form className='mt-2' onSubmit={handleSubmit(submitForm)}>
+                            <div className="mb-3">
                                 <Link href="/auth/register-producer" className="d-block mb-2">
                                     Register as a Producer
                                 </Link>
                             </div>
-                            <div className='mb-5'>
+                            <div className='mb-3'>
                                 <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                                     <span className='btn__wrap'>
                                         <RiGoogleFill />
@@ -166,10 +166,10 @@ const RegisterForm: React.FC = () => {
                                     </span>
                                 </button>
                             </div>
-                            <div className='mb-4'>
+                            <div className='mb-3'>
                                 <div className='auth__or mx-auto fw-medium'></div>
                             </div>
-                            <div className='row mb-3'>
+                            <div className='row mb-2'>
                                 <div className='col-md-6'>
                                     <Input
                                         label={auth('first_name')}
@@ -288,7 +288,7 @@ const RegisterForm: React.FC = () => {
                                     {<ErrorHandler root={errors?.state as any} />}
                                 </div>
                             </div>
-                            <div className='mb-4'>
+                            <div className='mb-3'>
                                 <div className='form-check mb-0'>
                                     <input
                                         className={classNames(
@@ -305,7 +305,7 @@ const RegisterForm: React.FC = () => {
                                     {<ErrorHandler root={errors?.agreed as any} />}
                                 </div>
                             </div>
-                            <div className='mb-5'>
+                            <div className='mb-3'>
                                 <button
                                     type='submit'
                                     className={classNames(
@@ -318,8 +318,8 @@ const RegisterForm: React.FC = () => {
                                 </button>
                             </div>
 
-                            <p>{auth('register_text')} <br />
-                                <Link href='/auth/login' className='fw-medium'>{auth('login')}</Link>
+                            <p>{auth('register_text')}
+                                <Link href='/auth/login' className='fw-medium mx-2'>{auth('login')}</Link>
                             </p>
                         </form>
                     )}

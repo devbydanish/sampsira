@@ -141,7 +141,7 @@ const LoginForm: React.FC = () => {
                     type='submit' 
                     disabled={isSubmitting}
                     className={classNames(
-                        'btn btn-primary w-100 btn-loading',
+                        'btn btn-primary w-100 btn-loading text-white',
                         isSubmitting && 'active'
                     )}
                 >
