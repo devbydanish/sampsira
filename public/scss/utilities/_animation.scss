@@ -1,0 +1,54 @@
+//
+// Animation
+//
+
+.cover {
+
+    // Cover title animation
+    &.title-line-animation {
+        .cover__title {
+            display: initial;
+            background-image: linear-gradient(currentColor, currentColor);
+            background-position: 100% 100%;
+            background-repeat: no-repeat;
+            background-size: 0% 1px;
+            transition: background-size .5s;
+        }
+        @include hover {
+            .cover__title {
+                background-size: 100% 1px;
+                background-position: 0% 100%;
+            }
+        }
+    }
+
+    // Cover image scale animation
+    &.scale-animation {
+        .cover__image .ratio {
+            img {
+                transition: $transition-medium;
+            }
+        }
+        @include hover {
+            .cover__image .ratio {
+                img {
+                    transform: scale(1.1);
+                }
+            }
+        }
+    }
+}
+
+// Avatar image scale down animation
+.avatar {
+    &.scale-animation {
+        .avatar__image {
+            transition: $transition-medium;
+        }
+        @include hover {
+            .avatar__image {
+                transform: scale(0.9);
+            }
+        }
+    }
+}

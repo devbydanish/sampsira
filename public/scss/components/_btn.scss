@@ -1,0 +1,108 @@
+//
+// Button
+//
+
+
+.btn {
+    display: inline;
+    justify-content: center;
+
+    // Button has only icon
+    &.btn-icon {
+        @include padding-x($btn-padding-y);
+        display: inline-flex;
+        border-color: transparent !important;
+
+        &.btn-sm {
+            @include padding-x($btn-padding-y-sm);
+        }
+    }
+    
+    &.btn-play {
+        transition: $transition-short;
+        @include hidden;
+        &.active {
+            @include visible;
+        }
+    }
+
+    // Link button
+    &.btn-link {
+        padding: 0 0 $btn-link-padding-bottom;
+        font-weight: $font-weight-semi-bold;
+        text-transform: uppercase;
+        border: none;
+        font-size: $btn-link-font-size;
+        position: relative;
+        border-radius: 0;
+
+        @include hover-focus-active {
+            box-shadow: none;
+            &:before {
+                width: 0;
+                @include direction(left 100%);
+            }
+            &:after {
+                width: 100%;
+            }
+        }
+
+        @include before-after {
+            @include absolute(bottom 0);
+            @include direction(left 0);
+            background: currentColor;
+            height: $btn-link-border-height;
+        }
+        &:before {
+            width: 100%;
+            transition: $transition-short;
+        }
+        &:after {
+            width: 0;
+            transition: $transition-medium;
+        }
+    }
+
+    // Button with icon & text
+    .btn__wrap {
+        display: inline-flex;
+        align-items: center;
+        @include margin-x(auto);
+        > *:last-child {
+            @include direction(margin-left $btn-icon-child-padding-left);
+        }
+    }
+}
+
+// Default button
+.btn-white,
+.btn-default {
+    background-color: $btn-default-bg !important;
+    color: $white;
+    box-shadow: $btn-default-box-shadow;
+    @include hover-focus-active {
+        background-color: $btn-default-bg !important;
+        box-shadow: $btn-default-hover-box-shadow !important;
+        border-color: transparent !important;
+    }
+}
+
+.btn-loading.active {
+    text-indent: -1000px;
+    background-image: escape-svg($btn-loading-icon);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+// light button variant
+@each $name, $value in $theme-colors {
+    .btn-light-#{$name} {
+        background-color: rgba($value, 0.1);
+        color: $value;
+        border-color: transparent !important;
+        @include hover-focus-active {
+            background-color: rgba($value, 0.15) !important;
+            color: $value !important;
+        }
+    }
+}

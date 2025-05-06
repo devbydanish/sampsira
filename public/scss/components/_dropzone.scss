@@ -1,0 +1,16 @@
+//
+// Dropzone
+//
+
+
+.dropzone {
+    @include flexbox-center;
+    min-height: $dropzone-min-height;
+    padding: $dropzone-padding;
+    border: 1px dashed $dropzone-border-color;
+    border-radius: $dropzone-border-radius;
+
+    .dz-message {
+        margin: 0;
+    }
+}

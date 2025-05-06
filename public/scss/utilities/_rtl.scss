@@ -1,0 +1,58 @@
+
+[dir=rtl] {
+    * {
+        direction: rtl;
+    }
+
+    ul {
+        padding-inline-start: 0;
+    }
+
+    li,
+    .dropdown-menu {
+        text-align: inherit;
+    }
+
+    // Components
+    .form-check {
+        padding-left: initial;
+        padding-right: $form-check-padding-start;
+        .form-check-input {
+            float: right;
+            margin-left: initial;
+            margin-right: -$form-check-padding-start;
+        }
+    }
+
+    .form-select {
+        padding-right: $form-select-padding-x;
+        padding-left: $form-select-indicator-padding;
+        background-position: left $form-select-padding-x center;
+    }
+
+    .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: $input-border-radius;
+        border-bottom-left-radius: $input-border-radius;
+    }
+
+    .input-group:not(.has-validation) > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating), 
+    .input-group:not(.has-validation) > .dropdown-toggle:nth-last-child(n+3), 
+    .input-group:not(.has-validation) > .form-floating:not(:last-child) > .form-control, 
+    .input-group:not(.has-validation) > .form-floating:not(:last-child) > .form-select {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-top-right-radius: $input-border-radius;
+        border-bottom-right-radius: $input-border-radius;
+    }
+
+    .swiper-carousel {
+        .swiper-horizontal > .swiper-pagination-bullets.swiper-pagination-bullets-dynamic, 
+        .swiper-pagination-horizontal.swiper-pagination-bullets.swiper-pagination-bullets-dynamic {
+            left: initial;
+            right: 50%;
+            transform: translateX(40px);
+        }
+    }
+}

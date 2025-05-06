@@ -1,0 +1,43 @@
+{
+  "code": 200,
+  "data": [
+    {
+      "id": 1,
+      "title": "Summer Beats",
+      "artist": "Androws Kinny",
+      "like": true,
+      "cover": "/images/cover/large/1.jpg",
+      "tracks": [1, 2],
+      "thumb": "/images/cover/small/1.jpg",
+      "duration": "8:05",
+      "href": "/sound-kits/summer-beats",
+      "date": "2024-05-05",
+      "company": "LA 4TA INC",
+      "type": "sound-kit",
+      "Producers": [{"id": 1, "name": "Androws Kinny"}],
+      "rating": 4.5,
+      "premium": false,
+      "likes": 300,
+      "downloads": 100
+    },
+    {
+      "id": 2,
+      "title": "Latin Vibes",
+      "artist": "Androws Kinny",
+      "like": true,
+      "cover": "/images/cover/large/2.jpg",
+      "tracks": [1],
+      "thumb": "/images/cover/small/2.jpg",
+      "duration": "3:45",
+      "href": "/sound-kits/latin-vibes",
+      "date": "2024-05-05",
+      "company": "LA 4TA INC",
+      "type": "sound-kit",
+      "Producers": [{"id": 1, "name": "Androws Kinny"}],
+      "rating": 4.8,
+      "premium": false,
+      "likes": 250,
+      "downloads": 80
+    }
+  ]
+}

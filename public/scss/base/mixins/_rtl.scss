@@ -1,0 +1,72 @@
+
+// LTR
+// 
+@mixin ltr {
+    html:not([dir=rtl]) & {
+        @content;
+    }
+}
+
+// RTL
+// 
+@mixin rtl {
+    [dir=rtl] & {
+        @content;
+    }
+}
+
+$replacements: (
+    left: right,
+    right: left,
+    start: end,
+    end: start
+);
+
+
+// 
+// Mixin for direction{RTL|LTR}
+// 
+// Handel direction for multiple property value pairs
+// $props-values property value pairs e.g. {(margin-left, 10px), (text-align, left)}
+// 
+@mixin direction($props-values...) {
+
+    $rtl-props-values: ();
+
+    @each $pair in $props-values {
+        $prop: nth($pair, 1);
+        $value: nth($pair, 2);
+        $done: false;
+
+        // Replace $prop and $value only if not done in a previous iteration
+        @each $dir, $replacement in $replacements {
+            @if not $done and (str-index($prop, $dir) or (type-of($value) == string and str-index($value, $dir))) {
+                $prop: str-replace($prop, $dir, $replacement);
+
+                // Ensure $value is a string before attempting to perform string replacement
+                @if type-of($value) == string {
+                    $value: str-replace($value, $dir, $replacement);
+                }
+
+                $done: true;
+            }
+        }
+
+        // Append the replaced property-value pair to the list
+        $rtl-props-values: append($rtl-props-values, ($prop, $value), comma);
+    }
+
+    // Apply LTR styling
+    @include ltr {
+        @each $pair in $props-values {
+            #{nth($pair, 1)}: nth($pair, 2);
+        }
+    }
+
+    // Apply RTL styling
+    @include rtl {
+        @each $pair in $rtl-props-values {
+            #{nth($pair, 1)}: nth($pair, 2);
+        }
+    }
+}

@@ -1,0 +1,170 @@
+//
+// Footer
+//
+
+
+#footer {
+    padding-top: $footer-padding-top;
+    padding-bottom: $footer-padding-bottom;
+    background: transparent;
+    background-size: cover;
+    position: relative;
+    transition: $transition-medium;
+    margin-bottom: 50px;
+
+    @include before {
+        @include absolute(top 0 left 0);
+        @include size(100%);
+        background: $footer-overlay-bg;
+    }
+
+    > .container {
+        position: relative;
+    }
+
+    .email {
+        color: $white;
+    } 
+}
+.footer {
+    background-color: #111;
+    color: #fff;
+}
+
+.footer-logo {
+    max-width: 150px;
+}
+
+.footer-sampsira {
+    font-size: 15px;
+    font-weight: 500;
+    color: #ffffff;
+}
+.footer-la4tainc {
+    font-size: 15px;
+    font-weight: 500;
+    color: #ffffff;
+    transition: color 0.3s;
+}
+
+.footer-la4tainc:hover {
+    color: #ea580c;
+}
+
+.social {
+    padding: 0;
+    list-style: none;
+    display: flex;
+}
+
+.social li a {
+    color: #ffffff;
+    transition: color 0.3s;
+}
+
+.social li a:hover {
+    color: #ea580c;
+}
+
+.footer-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.footer-link {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-link:hover {
+    color: #ea580c;
+}
+
+// App download button styles
+.app-btn-group {
+    @include flexbox-center;
+    .btn {
+        min-width: $app-btn-min-width;
+        &:not(:first-child) {
+            @include direction(margin-left $spacer * .5);
+        }
+    }
+
+    @media (max-width: 479px) {
+        .btn {
+            min-width: $app-btn-min-width-xs;
+            &:not(:first-child) {
+                margin-top: $spacer * .5;
+                @include direction(margin-left 0);
+            }
+        }
+    }
+}
+
+
+// Landing pages footer styles
+#main_footer {
+    padding-top: $main-footer-padding-y;
+    .last-footer {
+        margin-top: $main-footer-padding-y;
+        border-top: 1px solid $last-footer-border-color;
+        @include flexbox;
+        justify-content: space-between;
+    }
+
+    // Desktop & Tablet
+    // Bootstrap mixin
+    @include media-breakpoint-up(sm) {
+        padding-top: $main-footer-padding-y-sm;
+        .last-footer {
+            margin-top: $main-footer-padding-y-sm;
+        }
+    }
+
+    @media (max-width: 479px) {
+        .last-footer {
+            justify-content: center;
+            .social {
+                @include flex;
+                margin-top: $spacer;
+                justify-content: center;
+            }
+        }
+    }
+}
+
+// Social icons
+.social {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    @include flexbox;
+
+    a {
+        color: $social-link-color;
+        @include hover-focus {
+            color: $social-link-hover-color;
+        }
+    }
+
+    li:not(:first-child) {
+        @include direction(margin-left $social-item-margin-left);
+    }
+}
+
+// Desktop & Tablet
+// Bootstrap mixin
+@include media-breakpoint-up(lg) {
+    #footer {
+        @include direction(margin-left $sidebar-width);
+    }
+
+    // Toggle sidebar
+    @include toggle-sidebar {
+        #footer {
+            @include direction(margin-left $toggle-sidebar-width);
+        }
+    }
+}

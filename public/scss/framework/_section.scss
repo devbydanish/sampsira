@@ -1,0 +1,171 @@
+//
+// Section
+//
+
+
+.section {
+    margin-bottom: $section-margin-bottom;
+
+    .section__head {
+        @include flexbox-v-center;
+        margin-bottom: $section-head-margin-bottom;
+    }
+
+    .section__subtitle {
+        display: block;
+        margin-bottom: $section-subtitle-margin-bottom;
+        text-transform: uppercase;
+        font-weight: $font-weight-semi-bold;
+        font-size: $section-subtitle-font-size;
+        color: $section-subtitle-color;
+    }
+}
+
+
+// Landing page section
+.main-section {
+    @include padding-y($main-section-padding-y);
+    overflow: hidden;
+
+    // Desktop & Tablet
+    // Bootstrap mixin
+    @include media-breakpoint-up(sm) {
+        @include padding-y($main-section-padding-y-sm);
+    }
+}
+
+// Analytics page section
+.analytics-container {
+    padding: 20px;
+    color: white;
+}
+
+.filter-dropdown {
+    min-width: 200px;
+}
+
+.date-picker-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    }
+
+.summary-cards {
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.summary-section {
+    padding-right: 30px;
+}
+.summary-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: black;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    flex: 1;
+    min-width: 150px;
+}
+
+.summary-card.active {
+    border: 2px solid white;
+}
+
+.chart-container {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.track-search {
+    width: 23%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.tracks-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+
+    thead {
+        th {
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            font-weight: bold;
+            background-color: black;
+            color: white;
+        }
+    }
+
+    tbody {
+        tr:nth-child(odd) {
+            background-color: #1a1a1a !important; // Dark gray
+        }
+
+        tr:nth-child(even) {
+            background-color: #000 !important; // Black
+        }
+
+        td {
+            padding: 14px;
+            vertical-align: middle;
+            color: white;
+
+        }
+    }
+}
+
+
+// Remove all other borders
+th, td {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+}
+
+.track-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.track-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+}
+
+.track-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+}
+
+.track-artist {
+    width: fit-content;
+    font-size: 12px;
+    color: #ccc;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 3px 6px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-top: 3px;
+}
+
+

@@ -1,0 +1,115 @@
+/* Contact Form */
+.contact-form {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.contact-form .form-control {
+    border: 1px solid #e0e0e0;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.contact-form .form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Contact Info */
+.contact-info {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.contact-info-item h5 {
+    color: var(--bs-primary);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.contact-info-item p {
+    margin-bottom: 0;
+    color: #666;
+}
+
+.contact-info-item a {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.contact-info-item a:hover {
+    color: var(--bs-primary);
+}
+
+.social-links .btn {
+    padding: 8px 16px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.social-links .btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Map Container */
+.map-container {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.map-container iframe {
+    display: block;
+}
+
+/* FAQ Section */
+.accordion-item {
+    border: none;
+    margin-bottom: 15px;
+    border-radius: 8px !important;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.accordion-button {
+    padding: 20px;
+    font-weight: 600;
+    background-color: white;
+}
+
+.accordion-button:not(.collapsed) {
+    color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.accordion-body {
+    padding: 20px;
+    background-color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .contact-info {
+        margin-top: 30px;
+    }
+
+    .map-container {
+        margin-top: 30px;
+    }
+
+    .contact-form,
+    .contact-info {
+        padding: 20px;
+    }
+}

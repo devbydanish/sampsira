@@ -1,0 +1,252 @@
+/**
+  * @name RegisterProducerForm
+  * @file form.tsx
+  * @description register producer form component
+  */
+"use client"
+
+// Modules
+import React from 'react'
+import classNames from 'classnames'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useForm } from 'react-hook-form'
+import { RiGoogleFill } from '@remixicon/react'
+import { useLocalStorage } from 'usehooks-ts'
+
+// Contexts
+import { useTheme } from '@/core/contexts/theme'
+import { useAuthentication } from '@/core/contexts/authentication'
+
+// Components
+import Input from '@/core/components/input'
+import ErrorHandler from '@/core/components/error'
+
+// Utilities
+import { postData } from '@/core/utils/api-call'
+import { PASSWORD } from '@/core/constants/regex'
+import { SUCCESSFUL } from '@/core/constants/codes'
+import { USER_KEY } from '@/core/constants/constant'
+import { ProducerRegisterTypes } from '@/core/types'
+
+const RegisterProducerForm: React.FC = () => {
+
+    const router = useRouter()
+    const [, saveUser] = useLocalStorage<any>(USER_KEY, null)
+    const {replaceClassName} = useTheme()
+    const { signInWithGoogle } = useAuthentication()
+    const auth = useTranslations('auth')
+    const {
+        register,
+        handleSubmit,
+        formState: {
+            errors,
+            isSubmitting
+        },
+        watch,
+        setValue
+    } = useForm<ProducerRegisterTypes>({
+        defaultValues: {
+            agreed: true,
+        }
+    })
+
+    const email = watch('email')
+    const [username, setUsername] = React.useState('');
+
+    React.useEffect(() => {
+        const generateUsername = () => {
+            const producerName = watch('producerName') || '';
+            const generatedUsername = producerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            setUsername(generatedUsername);
+            setValue('username', generatedUsername);
+        };
+
+        generateUsername();
+    }, [watch('producerName'), setValue]);
+
+    /**
+     * Handle form `onSubmit` event
+     * @param data
+     */
+    const submitForm = async (data: ProducerRegisterTypes) => {
+        await postData('/api/register', {...data, role: 'producer'}).then(result => {
+            if (result.status === SUCCESSFUL) {
+                saveUser({...data, role: 'producer'})
+                router.push('/')
+            }
+        })
+    }
+
+    return (
+        <>
+        <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
+            <div className="mb-4">
+                <Link href="/auth/register" className="d-block mb-2">
+                    {auth('register_user')}
+                </Link>
+            </div>
+            <div className='mb-5'>
+                <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
+                    <span className='btn__wrap'>
+                        <RiGoogleFill />
+                        <span className={replaceClassName('ms-2')}>
+                            Register with Google
+                        </span>
+                    </span>
+                </button>
+            </div>
+            <div className='mb-4'>
+                <div className='auth__or mx-auto fw-medium'></div>
+            </div>
+            <div className='row mb-3'>
+                <div className='col-md-6'>
+                    <Input
+                        label={auth('first_name')}
+                        id='firstName'
+                        className={classNames(
+                            'form-control',
+                            errors?.firstName && 'is-invalid'
+                        )}
+                        {...register('firstName', { required: "First name is required" })}
+                    />
+                    {<ErrorHandler root={errors?.firstName as any} />}
+                </div>
+                <div className='col-md-6'>
+                    <Input
+                        label={auth('last_name')}
+                        id='lastName'
+                        className={classNames(
+                            'form-control',
+                            errors?.lastName && 'is-invalid'
+                        )}
+                        {...register('lastName', { required: "Last name is required" })}
+                    />
+                    {<ErrorHandler root={errors?.lastName as any} />}
+                </div>
+            </div>
+            <div className='mb-3'>
+                <Input
+                    label={auth('producer_name')}
+                    id='producerName'
+                    className={classNames(
+                        'form-control',
+                        errors?.producerName && 'is-invalid'
+                    )}
+                    {...register('producerName', { required: "Producer name is required" })}
+                />
+                {<ErrorHandler root={errors?.producerName as any} />}
+            </div>
+            <div className='mb-3'>
+                <Input
+                    label={auth('username')}
+                    id='username'
+                    className={classNames(
+                        'form-control',
+                        errors?.username && 'is-invalid'
+                    )}
+                    {...register('username', { required: "Username is required" })}
+                />
+                {<ErrorHandler root={errors?.username as any} />}
+            </div>
+            <div className='mb-3'>
+                <Input
+                    label={auth('email')}
+                    type="email"
+                    id='email'
+                    className={classNames(
+                        'form-control',
+                        errors?.email && 'is-invalid'
+                    )}
+                    {...register('email', {
+                        required: "Email is required",
+                        pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: "Invalid email address"
+                        }
+                    })}
+                />
+                {<ErrorHandler root={errors?.email as any} />}
+            </div>
+            <div className='mb-3'>
+                <Input
+                    label={auth('confirm_email')}
+                    type="email"
+                    id='confirmEmail'
+                    className={classNames(
+                        'form-control',
+                        errors?.confirmEmail && 'is-invalid'
+                    )}
+                    {...register('confirmEmail', {
+                        required: "Confirm email is required",
+                        validate: value => value === email || "Emails do not match"
+                    })}
+                />
+                {<ErrorHandler root={errors?.confirmEmail as any} />}
+            </div>
+            <div className='row mb-3'>
+                <div className='col-md-6'>
+                    <Input
+                        label={auth('city')}
+                        id='city'
+                        className={classNames(
+                            'form-control',
+                            errors?.city && 'is-invalid'
+                        )}
+                        {...register('city', { required: "City is required" })}
+                    />
+                    {<ErrorHandler root={errors?.city as any} />}
+                </div>
+                <div className='col-md-6'>
+                    <Input
+                        label={auth('state')}
+                        id='state'
+                        className={classNames(
+                            'form-control',
+                            errors?.state && 'is-invalid'
+                        )}
+                        {...register('state', { required: "State is required" })}
+                    />
+                    {<ErrorHandler root={errors?.state as any} />}
+                </div>
+            </div>
+            <div className='mb-4'>
+                <div className='form-check mb-0'>
+                    <input
+                        className={classNames(
+                            'form-check-input',
+                            errors?.agreed && 'is-invalid'
+                        )}
+                        type='checkbox'
+                        id='agree'
+                        {...register('agreed', { required: "You must agree to the terms and conditions" })}
+                    />
+                    <label className='form-check-label' htmlFor='agree'>
+                        {auth('agree')} <Link href='/'>Terms &amp; Condition</Link>
+                    </label>
+                    {<ErrorHandler root={errors?.agreed as any} />}
+                </div>
+            </div>
+            <div className='mb-5'>
+                <button
+                    type='submit'
+                    className={classNames(
+                        'btn btn-primary w-100 btn-loading',
+                        isSubmitting && 'active'
+                    )}
+                    disabled={isSubmitting}
+                >
+                    {auth('register')}
+                </button>
+            </div>
+            <p>{auth('register_text')} <br />
+                <Link href='/auth/login' className='fw-medium'>{auth('login')}</Link>
+            </p>
+        </form>
+        </>
+    )
+}
+
+RegisterProducerForm.displayName = 'RegisterProducerForm'
+export default RegisterProducerForm

@@ -1,0 +1,129 @@
+/* Timeline */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--bs-primary);
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 50px;
+    display: flex;
+    align-items: center;
+}
+
+.timeline-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--bs-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    margin-left: 20px;
+    flex-grow: 1;
+}
+
+/* Team Section */
+.team-member {
+    margin-bottom: 30px;
+    transition: transform 0.3s ease;
+}
+
+.team-member:hover {
+    transform: translateY(-5px);
+}
+
+.team-member img {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Testimonials */
+.testimonial {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    transition: transform 0.3s ease;
+}
+
+.testimonial:hover {
+    transform: translateY(-5px);
+}
+
+blockquote {
+    font-style: italic;
+    font-size: 1.1em;
+    position: relative;
+    padding: 0 20px;
+}
+
+blockquote::before,
+blockquote::after {
+    content: '"';
+    font-size: 2em;
+    color: var(--bs-primary);
+    position: absolute;
+}
+
+blockquote::before {
+    left: -10px;
+    top: -10px;
+}
+
+blockquote::after {
+    right: -10px;
+    bottom: -10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 30px;
+    }
+
+    .timeline-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .timeline-badge {
+        margin-bottom: 15px;
+    }
+
+    .timeline-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .team-member img {
+        width: 150px;
+        height: 150px;
+    }
+}

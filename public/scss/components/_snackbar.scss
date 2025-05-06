@@ -1,0 +1,27 @@
+//
+// Snackbar
+//
+
+
+.snackbar {
+    background: $snackbar-bg !important;
+    font-family: inherit !important;
+    border-radius: $snackbar-border-radius !important;
+
+    > * {
+        font-weight: 400 !important;
+        line-height: $snackbar-line-height !important;
+    }
+
+    &.notistack-MuiContent-error {
+        background: $snackbar-bg !important;
+    }
+
+    // snackbar variant
+    @each $name, $value in $snackbar-colors {
+        &.notistack-MuiContent-#{$name} {
+            background: $value !important;
+            color: color-contrast($value) !important;
+        }
+    }
+}
