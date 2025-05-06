@@ -25,6 +25,7 @@ import MusicHeader from '@/core/components/header/music'
 import MusicFooter from '@/core/components/footer/music'
 import Music from '@/view/layout/music'
 import AudioPlayer from '@/core/components/audio-player'
+import Sidebar from '@/core/components/sidebar'
 
 // Metadata
 export const metadata: Metadata = {
@@ -62,7 +63,6 @@ export default async function RootLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            <Loading />
             <Authentication>
               <Theme>
                 <Bootstrap />
@@ -70,6 +70,7 @@ export default async function RootLayout({
                   <Player>
                     <div className="min-h-screen pb-24 relative">
                       <MusicHeader />
+                      <Sidebar />
                       <Music>{children}</Music>
                       <MusicFooter />
                       <div className="fixed bottom-0 left-0 right-0 z-50">

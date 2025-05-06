@@ -14,7 +14,6 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 // Components
-import Sidebar from '@/core/components/sidebar'
 import Section from './section'
 import Tab from '@/core/components/tab'
 import TrackList from '@/core/components/list'
@@ -128,7 +127,6 @@ const Home: React.FC<Props> = ({
     return (
         // Under hero [[ Find at scss/framework/hero.scss ]]
         <div className='under-hero container'>
-            <Sidebar />
             
             <Section 
                 title={title(locale, 'new_release_title')}

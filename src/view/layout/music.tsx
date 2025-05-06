@@ -9,7 +9,6 @@
 import React, { useEffect, useState } from "react";
 
 // Components
-import Sidebar from "@/core/components/sidebar";
 
 // Utilities
 import { USER_KEY } from "@/core/constants/constant";
@@ -29,7 +28,6 @@ const Music: React.FC<Props> = ({ children }) => {
 
     return (
         <>
-            <Sidebar />
 
             {/* Page content [[ Find at scss/framework/wrapper.scss ]] */}
             <main id="page_content">{children}</main>
