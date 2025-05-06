@@ -81,13 +81,13 @@ const RegisterProducerForm: React.FC = () => {
 
     return (
         <>
-        <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
-            <div className="mb-4">
+        <form className='mt-2' onSubmit={handleSubmit(submitForm)}>
+            <div className="mb-3">
                 <Link href="/auth/register" className="d-block mb-2">
                     {auth('register_user')}
                 </Link>
             </div>
-            <div className='mb-5'>
+            <div className='mb-3'>
                 <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                     <span className='btn__wrap'>
                         <RiGoogleFill />
@@ -97,10 +97,10 @@ const RegisterProducerForm: React.FC = () => {
                     </span>
                 </button>
             </div>
-            <div className='mb-4'>
+            <div className='mb-3'>
                 <div className='auth__or mx-auto fw-medium'></div>
             </div>
-            <div className='row mb-3'>
+                <div className='row mb-2'>
                 <div className='col-md-6'>
                     <Input
                         label={auth('first_name')}
@@ -211,7 +211,7 @@ const RegisterProducerForm: React.FC = () => {
                     {<ErrorHandler root={errors?.state as any} />}
                 </div>
             </div>
-            <div className='mb-4'>
+            <div className='mb-3'>
                 <div className='form-check mb-0'>
                     <input
                         className={classNames(
@@ -228,11 +228,11 @@ const RegisterProducerForm: React.FC = () => {
                     {<ErrorHandler root={errors?.agreed as any} />}
                 </div>
             </div>
-            <div className='mb-5'>
+            <div className='mb-3'>
                 <button
                     type='submit'
                     className={classNames(
-                        'btn btn-primary w-100 btn-loading',
+                        'btn btn-primary w-100 btn-loading text-white',
                         isSubmitting && 'active'
                     )}
                     disabled={isSubmitting}
@@ -240,8 +240,8 @@ const RegisterProducerForm: React.FC = () => {
                     {auth('register')}
                 </button>
             </div>
-            <p>{auth('register_text')} <br />
-                <Link href='/auth/login' className='fw-medium'>{auth('login')}</Link>
+            <p>{auth('register_text')}
+                <Link href='/auth/login' className='fw-medium mx-2'>{auth('login')}</Link>
             </p>
         </form>
         </>

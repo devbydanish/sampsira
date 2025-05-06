@@ -309,7 +309,7 @@ const RegisterForm: React.FC = () => {
                                 <button
                                     type='submit'
                                     className={classNames(
-                                        'btn btn-primary w-100 btn-loading',
+                                        'btn btn-primary w-100 btn-loading text-white',
                                         isSubmitting && 'active'
                                     )}
                                     disabled={isSubmitting}

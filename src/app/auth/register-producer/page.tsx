@@ -18,7 +18,7 @@ export default async function RegisterPage() {
 	return (
 		<>
 			<div 
-                className='d-flex align-items-center justify-content-between mb-2'
+                className='d-flex align-items-center justify-content-center mb-2'
             >
                 <h4 className='mb-0 text-dark'>
                     {auth('register_producer_title') + ' '} <span className='text-primary'>Producer</span>
