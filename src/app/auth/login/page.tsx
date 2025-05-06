@@ -19,7 +19,7 @@ export default async function LoginPage() {
 	return (
 		<>
             <div 
-                className='d-flex align-items-center justify-content-between mb-2'
+                className='d-flex align-items-center justify-content-center mb-2'
             >
                 <h4 className='mb-0 text-dark'>
                     {auth('login_title') + ' '} <span className='text-primary'>{BRAND.name}</span>

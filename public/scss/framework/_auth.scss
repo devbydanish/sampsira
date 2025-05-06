@@ -5,6 +5,7 @@
 
 .auth {
     min-height: $auth-min-height;
+    padding-top: 5rem;
     @include flexbox-center;
 
     @include before {

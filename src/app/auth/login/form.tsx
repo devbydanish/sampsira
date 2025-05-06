@@ -79,8 +79,8 @@ const LoginForm: React.FC = () => {
     }
 
     return (
-        <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
-            <div className='mb-5'>
+        <form className='mt-4' onSubmit={handleSubmit(submitForm)}>
+            <div className='mb-3'>
                 <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                     <span className='btn__wrap'>
                         <RiGoogleFill />
@@ -90,10 +90,10 @@ const LoginForm: React.FC = () => {
                     </span>
                 </button>
             </div>
-            <div className='mb-4'>
+            <div className='mb-3'>
                 <div className='auth__or mx-auto fw-medium'></div>
             </div>
-            <div className='mb-3'>
+            <div className='mb-2'>
                 <Input 
                     label="Email"
                     type="email"
@@ -112,7 +112,7 @@ const LoginForm: React.FC = () => {
                 />
                 {<ErrorHandler root={errors?.email as any} />}
             </div>
-            <div className='mb-3'>
+            <div className='mb-2'>
                 <Input 
                     label={auth('password')}
                     id='password' 
@@ -128,7 +128,7 @@ const LoginForm: React.FC = () => {
                 />
                 {<ErrorHandler root={errors?.password as any} />}
             </div>
-            <div className={replaceClassName('mb-4 text-end')}>
+            <div className={replaceClassName('mb-3 text-end')}>
                 <Link 
                     href='/auth/forgot' 
                     className='link-primary fw-medium'
@@ -136,7 +136,7 @@ const LoginForm: React.FC = () => {
                     {auth('forgot_password')}
                 </Link>
             </div>
-            <div className='mb-5'>
+            <div className='mb-3'>
                 <button 
                     type='submit' 
                     disabled={isSubmitting}
@@ -148,8 +148,8 @@ const LoginForm: React.FC = () => {
                     {auth('login')}
                 </button>
             </div>
-            <p>{auth('login_text')} <br />
-                <Link href='/auth/register' className='fw-medium'>
+            <p>{auth('login_text')} 
+                <Link href='/auth/register' className='fw-medium mx-2'>
                     {auth('register')}
                 </Link>
             </p>
