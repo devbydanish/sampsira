@@ -76,12 +76,22 @@ const PlayerProvider = ({ children }: PlayerProviderProps) => {
     }
 
     const playPause = (track: TrackTypes) => {
-        setActiveTrack(track)
-        setIsPlaying(!isPlaying)
+        console.log('PlayPause called with track:', track);
+        console.log('Current activeTrack:', activeTrack);
+        console.log('Current isPlaying:', isPlaying);
+
+        if (activeTrack?.id === track.id) {
+            // If it's the same track, toggle play/pause
+            handleMediaClick(!isPlaying);
+        } else {
+            // If it's a new track, update activeTrack and play it
+            setActiveTrack(track);
+            playSong(track);
+        }
     }
 
     const setPlayerStatus = () => {
-        setIsPlaying(!isPlaying)
+        handleMediaClick(!isPlaying);
     }
 
     // Queue add tracks in player
@@ -145,14 +155,15 @@ const PlayerProvider = ({ children }: PlayerProviderProps) => {
                 playPromise.then(() => {
                     console.log('Audio started playing successfully');
                     setIsPlaying(true);
+                    setActiveSong(song);
+                    setActiveTrack(song);
                 }).catch(error => {
                     console.error('Error playing audio:', error);
                     setIsPlaying(false);
                 });
             }
 
-            // Set current song and add to queue
-            setActiveSong(song);
+            // Add to queue
             addSong(song);
 
         } catch (error) {

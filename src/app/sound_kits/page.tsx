@@ -1,14 +1,6 @@
-
 // Layout
-import SoundKits from '@/view/layout/sound-kits'
+import SoundKitsClientWrapper from '@/view/layout/sound-kits-client-wrapper'
 
-// Utilities
-import { getSoundKits } from '@/core/utils/helper'
-
-
-export default async function SoundKitsPage() {
-
-    const soundKits = await getSoundKits()
-	
-	return <SoundKits soundKits={soundKits} />
+export default function SoundKitsPage() {
+	return <SoundKitsClientWrapper />
 }
