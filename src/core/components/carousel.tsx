@@ -93,7 +93,7 @@ const Carousel: React.FC<CarouselProps> = (
         navigation,
         pagination,
         slideView = 1,
-        data,
+        data = [],
         Component,
         childProps,
         onAfterInit
@@ -104,6 +104,17 @@ const Carousel: React.FC<CarouselProps> = (
     const [direction, setDirection] = useState<'rtl' | 'ltr'>()
     const next = useRef<HTMLDivElement | null>(null)
     const prev = useRef<HTMLDivElement | null>(null)
+
+    // If data is undefined or not an array, return null or a placeholder
+    if (!Array.isArray(data)) {
+        console.warn('Carousel: data prop must be an array');
+        return null;
+    }
+
+    // If data is empty, return null or a placeholder
+    if (data.length === 0) {
+        return null;
+    }
 
     // Set carousel slides
     const desktopSlides = slideView
@@ -120,7 +131,7 @@ const Carousel: React.FC<CarouselProps> = (
     const mobileGap = 16
 
     // Calculate number of rows to set grid view
-    const rows = data.reduce((all, one, i) => {
+    const rows = data.reduce((all: any[], one: any, i: number) => {
         const ch = Math.floor(i/desktopSlides) 
         all[ch] = [].concat((all[ch]||[]),one) 
         return all

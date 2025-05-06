@@ -35,6 +35,9 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
     const {replaceClassName} = useTheme()
     const locale = useTranslations()
 
+    console.log(tracks, 'tracks')
+    
+
     return (
         <div className='container' style={{marginTop: '100px'}}>
             {/* Latest Samples Section */}
@@ -52,12 +55,8 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                                             ...item,
                                             href: `/tracks/${item.id}`,
                                             title: item.title || item.name,
-                                            src: item.audio?.data?.attributes?.url ?
-                                                `${process.env.NEXT_PUBLIC_STRAPI_URL}${item.audio.data.attributes.url}` :
-                                                item.audioUrl,
-                                            cover: item.cover?.data?.attributes?.url ?
-                                                `${process.env.NEXT_PUBLIC_STRAPI_URL}${item.cover.data.attributes.url}` :
-                                                '/images/covers/default.png',
+                                            src: item.src,
+                                            cover: item.cover,
                                             type: 'track'
                                         }}
                                         duration

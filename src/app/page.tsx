@@ -1,5 +1,5 @@
 // Components
-import Home from '@/view/layout/home'
+import HomeClientWrapper from '@/view/layout/home-client-wrapper'
 
 // Utilities
 import {
@@ -10,19 +10,7 @@ import {
 import Sidebar from '@/core/components/sidebar'
 
 
-export default async function HomePage() {
-
-	const [
-		soundKits,
-		Producers,
-		tracks
-	] = await Promise.all([
-		getSoundKits(),
-		getProducers(),
-		getTracks()
-	])
-
-	
+export default function HomePage() {
 	return (
         <>
 			{/* Hero [[ Find at scss/framework/hero.scss ]] */}
@@ -32,11 +20,7 @@ export default async function HomePage() {
 			/>
 
 			{/* Under hero [[ Find at scss/framework/hero.scss ]] */}
-			<Home
-				soundKits={soundKits}
-				Producers={Producers}
-				tracks={tracks}
-			/>
+			<HomeClientWrapper />
 		</>
 	)
 }

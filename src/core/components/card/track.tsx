@@ -65,6 +65,22 @@ const TrackCard: React.FC<TrackProps> = (
     const Component: any = link ? Link : 'div'
     const attr = link ? {href: data.href} : {}
 
+    // Ensure track data has all required fields
+    const trackData = {
+        ...data,
+        id: data.id,
+        title: data.title || data.name,
+        type: 'track',
+        src: data.src || (data.audio?.data?.attributes?.url ? 
+            `${process.env.NEXT_PUBLIC_STRAPI_URL}${data.audio.data.attributes.url}` : 
+            data.audioUrl),
+        cover: data.cover || (data.cover?.data?.attributes?.url ?
+            `${process.env.NEXT_PUBLIC_STRAPI_URL}${data.cover.data.attributes.url}` :
+            '/images/covers/default.png'),
+        Producers: data.Producers || []
+    }
+
+    console.log("Track data for player:", trackData);
 
     return (
         // Cover [[ Find at scss/components/cover.scss ]]
@@ -91,7 +107,7 @@ const TrackCard: React.FC<TrackProps> = (
                             like={like}
                             playlist={playlist}
                             queue={queue}
-                            data={data}
+                            data={trackData}
                             href={data.href}
                             iconVertical
                         />
@@ -106,15 +122,15 @@ const TrackCard: React.FC<TrackProps> = (
                     {...attr}
                 >
                     <Image
-                        src={data.cover}
+                        src={trackData.cover}
                         width={320}
                         height={320}
-                        alt={data.title ? data.title : data.name}
+                        alt={trackData.title}
                     />
                 </Component>
 
                 {play && (
-                    <PlayButton track={data} />
+                    <PlayButton track={trackData} />
                 )}
             </div>
 
@@ -122,22 +138,22 @@ const TrackCard: React.FC<TrackProps> = (
             <div className='cover__foot'>
                 {data.href ? (
                     <Link href={data.href} className='cover__title text-truncate'>
-                        {data.title ? data.title : data.name}
+                        {trackData.title}
                     </Link>
                 ) : (
                     <span className='cover__title text-truncate'>
-                        {data.title ? data.title : data.name}
+                        {trackData.title}
                     </span>
                 )}
-                {data.Producers && (
+                {trackData.Producers && trackData.Producers.length > 0 && (
                     <div className='cover__subtitle text-truncate'>
-                        {data.Producers.map((producer: InfoType, index: number) => (
+                        {trackData.Producers.map((producer: InfoType, index: number) => (
                             <Link
                                 key={index}
                                 href={'/music/producers/' + producer.id}
                             >
                                 {producer.name}
-                                {data.Producers.length - 1 === index ? '' : ', '}
+                                {index < trackData.Producers.length - 1 ? ', ' : ''}
                             </Link>
                         ))}
                     </div>

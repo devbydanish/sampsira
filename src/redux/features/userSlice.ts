@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import { clearData } from './dataSlice';
 
 interface User {
     id: number;
@@ -105,25 +106,45 @@ export const loginUser = createAsyncThunk(
     }
 );
 
+export const logoutUser = createAsyncThunk(
+    "logoutUser",
+    async (_, { dispatch }) => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("jwt");
+        dispatch(clearData());
+        return true;
+    }
+);
+
 const userSlice = createSlice({
     name: "user",
     initialState,
     reducers: {
         getUser: (state: AuthState) => {
             const userDataString = localStorage.getItem("user");
-            if (userDataString) {
+            const token = localStorage.getItem("jwt");
+            
+            if (userDataString && token) {
                 try {
                     const userData = JSON.parse(userDataString);
                     console.log('Retrieved user data:', userData);
                     
                     state.isAuthenticated = true;
                     state.user = userData;
+                    state.token = token;
                     state.subscriptionActive = new Date(userData.subscribedTill) > new Date();
                 } catch (error) {
                     console.error('Error parsing user data:', error);
                     state.user = null;
                     state.isAuthenticated = false;
+                    state.token = '';
                 }
+            } else {
+                // Clear state if either user data or token is missing
+                state.user = null;
+                state.isAuthenticated = false;
+                state.token = '';
+                state.subscriptionActive = false;
             }
         },
         resetError: (state: AuthState) => {
@@ -146,6 +167,7 @@ const userSlice = createSlice({
         builder
             .addCase(loginUser.pending, (state) => {
                 state.status = "loading";
+                state.error = null;
             })
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.status = "succeeded";
@@ -153,8 +175,9 @@ const userSlice = createSlice({
                 state.token = action.payload.jwt;
                 state.isAuthenticated = true;
                 state.subscriptionActive = new Date(action.payload.user.subscribedTill) > new Date();
+                state.error = null;
                 
-                // Store complete user data
+                // Store complete user data and token
                 localStorage.setItem("user", JSON.stringify(action.payload.user));
                 localStorage.setItem("jwt", action.payload.jwt);
                 
@@ -165,9 +188,19 @@ const userSlice = createSlice({
                 state.error = action.payload?.error?.message || 
                             action.payload?.message || 
                             'Login failed';
+                state.isAuthenticated = false;
+                state.user = null;
+                state.token = "";
             });
     },
 });
 
 export const { getUser, resetError, LoginUs, LogoutUs } = userSlice.actions;
+
+// Helper function for logout that dispatches both actions
+export const logout = () => (dispatch: any) => {
+    dispatch(LogoutUs());
+    dispatch(clearData());
+};
+
 export default userSlice.reducer;

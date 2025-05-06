@@ -14,6 +14,19 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true
     },
+    images: {
+        // only the hostname (no port)
+        domains: ['127.0.0.1'],
+        // if you want to allow any port on localhost, you could instead use:
+        // remotePatterns: [
+        //   {
+        //     protocol: 'http',
+        //     hostname: 'localhost',
+        //     port: '1338',    // optional
+        //     pathname: '/uploads/**',
+        //   },
+        // ],
+      },
     async redirects() {
         return [
             {
