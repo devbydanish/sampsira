@@ -264,8 +264,7 @@ export const fetchProducers = createAsyncThunk(
             }
             
             const data = await response.json();
-            
-            return data.data
+            const producers = data
                 ?.filter((user: any) => user.isProducer)
                 ?.map((user: any) => ({
                     id: user.id,
@@ -275,6 +274,12 @@ export const fetchProducers = createAsyncThunk(
                     href: `/users/${user.username}`,
                     isProducer: true
                 }));
+            console.log('Producers data:', producers);
+            // return random 8 producers
+            const randomProducers = producers.sort(() => 0.5 - Math.random()).slice(0, 8);
+            console.log('Random producers:', randomProducers);
+            return randomProducers
+
         } catch (error: any) {
             return rejectWithValue(error.message || 'Error fetching producers');
         }
