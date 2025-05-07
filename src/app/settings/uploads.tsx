@@ -16,6 +16,12 @@ const UserUploads: React.FC = () => {
         { id: 'sound_kits', name: locale('sound_kits') }
     ]
 
+    const tracks = currentUser?.tracks?.map((item) => ({
+        ...item,
+        cover: process.env.NEXT_PUBLIC_STRAPI_URL + item.cover.url,
+        src: process.env.NEXT_PUBLIC_STRAPI_URL + item.audio.url,
+    }))
+
     return (
         <div className="card-body">
             <h5 className="mb-4 text-black">My Uploads</h5>
@@ -41,7 +47,7 @@ const UserUploads: React.FC = () => {
                     {(currentUser?.tracks?.length || 0) > 0 ? (
                         <Section
                             title=""
-                            data={currentUser?.tracks || []}
+                            data={tracks || []}
                             card="track"
                             slideView={4}
                             navigation
