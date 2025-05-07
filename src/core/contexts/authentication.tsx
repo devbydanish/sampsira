@@ -14,12 +14,13 @@ type ExtendedUserType = CurrentUserTypes & {
     lastName?: string;
     tracks?: any[];
     soundKits?: any[];
+    img?: string;
 }
 
 interface AuthContextProps {
     logout: () => void
     signInWithGoogle: () => Promise<void>
-    currentUser: ExtendedUserType | null
+    currentUser: any | null
     isLoading: boolean
 }
 
@@ -33,12 +34,12 @@ const Authentication: React.FC<AuthenticationProps> = (props) => {
     const router = useRouter()
     const pathname = usePathname()
     const dispatch = useDispatch()
-    const [user, setUser] = useState<ExtendedUserType | null>(null)
+    const [user, setUser] = useState<any | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
     const verifyUserStatus = async (token: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate[tracks][fields][0]=title&populate[tracks][fields][1]=bpm&populate[tracks][fields][2]=moods&populate[tracks][fields][3]=keys&populate[tracks][populate][audio][fields][0]=url&populate[tracks][populate][cover][fields][0]=url&populate[soundKits][fields][0]=title&populate[soundKits][populate][cover][fields][0]=url&populate[soundKits][populate][tracks][populate][audio][fields][0]=url`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate[tracks][fields][0]=title&populate[tracks][fields][1]=bpm&populate[tracks][fields][2]=moods&populate[tracks][fields][3]=keys&populate[tracks][populate][audio][fields][0]=url&populate[tracks][populate][cover][fields][0]=url&populate[soundKits][fields][0]=title&populate[soundKits][populate][cover][fields][0]=url&populate[soundKits][populate][tracks][populate][audio][fields][0]=url&populate[img][fields][0]=url`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             

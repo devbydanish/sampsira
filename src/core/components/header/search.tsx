@@ -184,7 +184,7 @@ const Search: React.FC = () => {
                                                 <Link href={`/music/producers/${producer.id}`} className='list__cover'>
                                                     <div className='ratio ratio-1x1'>
                                                         <Image
-                                                            src={producer.avatar || '/images/cover/large/default.jpg'}
+                                                            src={producer.cover || '/images/cover/large/default.jpg'}
                                                             width={128}
                                                             height={128}
                                                             alt={producer.name}

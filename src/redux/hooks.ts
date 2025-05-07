@@ -1,3 +1,4 @@
+"use client"
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from './store';
 import { useEffect } from 'react';
@@ -26,14 +27,20 @@ interface UseTracksOptions {
 export const useTracks = (options: UseTracksOptions = {}) => {
   const dispatch = useAppDispatch();
   const { tracks } = useAppSelector((state) => state.data);
-  const { token } = useAppSelector((state) => state.user);
+  // const { token } = useAppSelector((state) => state.user);
   
+  
+  // useEffect(() => {
+  //   if (token && !options.skipFetch) {
+  //     dispatch(fetchTracks(options));
+  //   }
+  // }, [dispatch, token, options.limit, options.genre, options.sortBy, options.sortOrder, options.skipFetch]);
   
   useEffect(() => {
-    if (token && !options.skipFetch) {
+    if (!options.skipFetch) {
       dispatch(fetchTracks(options));
     }
-  }, [dispatch, token, options.limit, options.genre, options.sortBy, options.sortOrder, options.skipFetch]);
+  }, [dispatch, options.limit, options.genre, options.sortBy, options.sortOrder, options.skipFetch]);
   
   return {
     tracks: tracks.data,
@@ -63,13 +70,19 @@ export const useSoundKits = (skipFetch = false) => {
 export const useProducers = (skipFetch = false) => {
   const dispatch = useAppDispatch();
   const { producers } = useAppSelector((state) => state.data);
-  const { token } = useAppSelector((state) => state.user);
+  // const { token } = useAppSelector((state) => state.user);
   
+  // useEffect(() => {
+  //   if (token && !skipFetch) {
+  //     dispatch(fetchProducers());
+  //   }
+  // }, [dispatch, token, skipFetch]);
+
   useEffect(() => {
-    if (token && !skipFetch) {
+    if (!skipFetch) {
       dispatch(fetchProducers());
     }
-  }, [dispatch, token, skipFetch]);
+  }, [dispatch, skipFetch]);
   
   return {
     producers: producers.data,

@@ -120,11 +120,11 @@ export const fetchTracks = createAsyncThunk(
     async (options: GetTracksOptions = {}, { getState, rejectWithValue }) => {
         try {
             const state = getState() as RootState;
-            const token = state.user.token;
+            // const token = state.user.token;
             
-            if (!token) {
-                return rejectWithValue('No authentication token found');
-            }
+            // if (!token) {
+            //     return rejectWithValue('No authentication token found');
+            // }
             
             const {
                 limit,
@@ -148,11 +148,7 @@ export const fetchTracks = createAsyncThunk(
                 url += `&pagination[limit]=${limit}`;
             }
             
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetch(url);
 
             console.log('API response:', response);
     
@@ -246,16 +242,16 @@ export const fetchProducers = createAsyncThunk(
     async (_, { getState, rejectWithValue }) => {
         try {
             const state = getState() as RootState;
-            const token = state.user.token;
+            // const token = state.user.token;
             
-            if (!token) {
-                return rejectWithValue('No authentication token found');
-            }
+            // if (!token) {
+            //     return rejectWithValue('No authentication token found');
+            // }
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?populate[img][fields][0]=url`, {
+                // headers: {
+                //     'Authorization': `Bearer ${token}`
+                // }
             });
             
             if (!response.ok) {
@@ -270,7 +266,7 @@ export const fetchProducers = createAsyncThunk(
                     id: user.id,
                     name: user.username,
                     type: 'producer',
-                    cover: user.cover || '/images/cover/large/1.jpg',
+                    cover: user.img? process.env.NEXT_PUBLIC_STRAPI_URL + user.img.url : '/images/cover/large/1.jpg',
                     href: `/users/${user.username}`,
                     isProducer: true
                 }));

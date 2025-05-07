@@ -46,7 +46,7 @@ const Profile: React.FC = () => {
                     >
                         <div className='avatar__image'>
                             <Image 
-                                src={currentUser.cover || '/images/users/default.png'}
+                                src={process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url || '/images/users/default.png'}
                                 width={128}
                                 height={128}
                                 alt='User'
@@ -61,7 +61,7 @@ const Profile: React.FC = () => {
                         <div className='py-2 px-3 avatar avatar--lg'>
                             <div className='avatar__image'>
                                 <Image 
-                                    src={currentUser.cover || '/images/users/default.png'}
+                                    src={process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url || '/images/users/default.png'}
                                     width={128}
                                     height={128}
                                     alt={currentUser.name}

@@ -51,13 +51,15 @@ const ProfileForm: React.FC = () => {
         youtube: { platform: 'youtube', connected: false, username: '', profileUrl: '' },
         tiktok: { platform: 'tiktok', connected: false, username: '', profileUrl: '' }
     })
+    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+    const [previewImage, setPreviewImage] = useState<string>(process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url || '/images/users/default.png');
 
     // Initialize social accounts from currentUser if available
     useEffect(() => {
         if (currentUser?.socialAccounts) {
             setSocialAccounts(prevAccounts => ({
                 ...prevAccounts,
-                ...currentUser.socialAccounts
+                ...currentUser?.socialAccounts
             }));
         }
     }, [currentUser]);
@@ -108,7 +110,7 @@ const ProfileForm: React.FC = () => {
         formState: { errors }
     } = useForm<ProfileTypes>({
         defaultValues: {
-            image: currentUser?.cover || '/images/users/default.png',
+            image: currentUser?.img || '/images/users/default.png',
             firstName: currentUser?.firstName || '',
             lastName: currentUser?.lastName || '',
             displayName: currentUser?.displayName || '',
@@ -118,18 +120,18 @@ const ProfileForm: React.FC = () => {
     })
 
     // Effect to update form when currentUser changes
-    useEffect(() => {
-        if (currentUser) {
-            reset({
-                image: currentUser?.cover || '/images/users/default.png',
-                firstName: currentUser?.firstName || '',
-                lastName: currentUser?.lastName || '',
-                displayName: currentUser?.displayName || '',
-                username: currentUser?.username || '',
-                bio: currentUser?.bio || '',
-            });
-        }
-    }, [currentUser, reset]);
+    // useEffect(() => {
+    //     if (currentUser) {
+    //         reset({
+    //             image: currentUser?.cover || '/images/users/default.png',
+    //             firstName: currentUser?.firstName || '',
+    //             lastName: currentUser?.lastName || '',
+    //             displayName: currentUser?.displayName || '',
+    //             username: currentUser?.username || '',
+    //             bio: currentUser?.bio || '',
+    //         });
+    //     }
+    // }, [currentUser, reset]);
 
     const handleCancel = () => {
         reset({
@@ -174,14 +176,56 @@ const ProfileForm: React.FC = () => {
         setDeleteConfirmation('')
     }
 
+    const handleImageUpload = async (file: File) => {
+        try {
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
+                },
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload image');
+            }
+
+            const uploadData = await uploadResponse.json();
+            return uploadData[0].id; // Return the URL of the uploaded image
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    };
+
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setUploadedImage(file);
+            // Create a preview URL for the selected image
+            const previewUrl = URL.createObjectURL(file);
+            setPreviewImage(previewUrl);
+        }
+    };
+
     const submitForm = async (data: ProfileTypes) => {
         try {
             if (currentUser) {
-                console.log('Submitting profile update:', data);
-                const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me`, {
+                let imageUrl = data.image;
+
+                // If there's a new image uploaded, process it first
+                if (uploadedImage) {
+                    imageUrl = await handleImageUpload(uploadedImage);
+                }
+
+                console.log('Submitting profile update:', { ...data, image: imageUrl });
+                const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${currentUser.jwt}`,
+                        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
@@ -190,7 +234,7 @@ const ProfileForm: React.FC = () => {
                         username: data.username,
                         displayName: data.displayName,
                         bio: data.bio,
-                        cover: data.image
+                        img: imageUrl
                     }),
                 });
     
@@ -209,6 +253,15 @@ const ProfileForm: React.FC = () => {
                 
                 localStorage.setItem("user", JSON.stringify(updatedUser));
                 setIsEditing(false);
+                setUploadedImage(null);
+                reset({
+                    image: responseData.cover || '/images/users/default.png',
+                    firstName: responseData.firstName || '',
+                    lastName: responseData.lastName || '',
+                    displayName: responseData.displayName || '',
+                    username: responseData.username || '',
+                    bio: responseData.bio || '',
+                });
                 alert('Profile updated successfully!');
             }
         } catch (error) {
@@ -581,7 +634,7 @@ const ProfileForm: React.FC = () => {
                                                 <div className='avatar avatar--xl mb-2'>
                                                     <div className='avatar__image'>
                                                         <Image
-                                                            src={getValues().image as string}
+                                                            src={previewImage}
                                                             className='img-fluid'
                                                             width={128}
                                                             height={128}
@@ -594,7 +647,9 @@ const ProfileForm: React.FC = () => {
                                                         type='file'
                                                         id='profile'
                                                         className='d-none'
-                                                        {...register('image')}
+                                                        accept="image/*"
+                                                        onChange={handleImageChange}
+                                                        disabled={!isEditing}
                                                     />
                                                     <label
                                                         htmlFor='profile'
@@ -608,13 +663,13 @@ const ProfileForm: React.FC = () => {
                                                             type="button"
                                                             className="btn btn-danger"
                                                             onClick={() => {
-                                                                // Handle profile image deletion
+                                                                setPreviewImage("/images/users/default.png");
+                                                                setUploadedImage(null);
                                                                 const updatedUser = {
                                                                     ...currentUser,
                                                                     cover: "/images/users/default.png"
                                                                 };
                                                                 localStorage.setItem("user", JSON.stringify(updatedUser));
-                                                                window.location.reload();
                                                             }}
                                                         >
                                                             {locale('remove_profile_image')}
@@ -696,7 +751,10 @@ const ProfileForm: React.FC = () => {
                                             type="button"
                                             className="btn btn-primary"
                                             style={{ color: '#ffffff' }}
-                                            onClick={() => setIsEditing(true)}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsEditing(true);
+                                            }}
                                         >
                                             {locale('edit_profile_info')}
                                         </button>
@@ -712,7 +770,10 @@ const ProfileForm: React.FC = () => {
                                             <button
                                                 type="button"
                                                 className="btn btn-secondary"
-                                                onClick={handleCancel}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleCancel();
+                                                }}
                                             >
                                                 {locale('cancel')}
                                             </button>
