@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { USER_KEY, SONG_KEY } from '../constants/constant'
 import { CurrentUserTypes } from '../types'
 import { useDispatch } from 'react-redux'
-import { getUser } from '@/redux/features/userSlice'
+import { getUser, LogoutUs } from '@/redux/features/userSlice'
 
 type ExtendedUserType = CurrentUserTypes & {
     role: string;
@@ -143,6 +143,8 @@ const Authentication: React.FC<AuthenticationProps> = (props) => {
         localStorage.removeItem('jwt');
         localStorage.removeItem(SONG_KEY);
         setUser(null);
+        dispatch(LogoutUs());
+
         router.push('/');
     };
 

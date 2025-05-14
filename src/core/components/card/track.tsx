@@ -76,7 +76,7 @@ const TrackCard: React.FC<TrackProps> = (
             data.audioUrl),
         cover: data.cover || (data.cover?.data?.attributes?.url ?
             `${process.env.NEXT_PUBLIC_STRAPI_URL}${data.cover.data.attributes.url}` :
-            '/images/covers/default.png'),
+            '/images/cover/default.jpg'),
         Producers: data.Producers || []
     }
 

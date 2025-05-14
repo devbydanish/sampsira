@@ -11,7 +11,7 @@ import { RootState } from '../store';
 
 // Constants
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1338';
-const DEFAULT_COVER = '/images/covers/default.png';
+const DEFAULT_COVER = '/images/cover/default.jpg';
 
 // Utility to get media URL from Strapi response
 function getMediaUrl(field: any): string | null {

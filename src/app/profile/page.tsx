@@ -44,7 +44,7 @@ export default function ProfilePage() {
                                                     item.audioUrl,
                                                 cover: item.cover?.data?.attributes?.url ?
                                                     `${process.env.NEXT_PUBLIC_STRAPI_URL}${item.cover.data.attributes.url}` :
-                                                    '/images/covers/default.png',
+                                                    '/images/cover/default.jpg',
                                                 type: 'track'  // Changed to 'track' to match the player's expected type
                                             }}
                                             duration
@@ -76,7 +76,7 @@ export default function ProfilePage() {
                                 title: kit.title || kit.name,
                                 cover: kit.cover?.data?.attributes?.url ?
                                     `${process.env.NEXT_PUBLIC_STRAPI_URL}${kit.cover.data.attributes.url}` :
-                                    '/images/covers/default.png',
+                                    '/images/cover/default.jpg',
                                 type: 'sound_kit'
                             }))}
                             card='sound_kit'

@@ -53,6 +53,7 @@ const LoginForm: React.FC = () => {
 
     useEffect(() => {
         if (isAuthenticated) {
+            console.log('User is authenticated:', isAuthenticated)
             router.push('/')
         }
     }, [router, isAuthenticated])

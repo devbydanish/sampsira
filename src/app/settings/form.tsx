@@ -52,7 +52,7 @@ const ProfileForm: React.FC = () => {
         tiktok: { platform: 'tiktok', connected: false, username: '', profileUrl: '' }
     })
     const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-    const [previewImage, setPreviewImage] = useState<string>(process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url || '/images/users/default.png');
+    const [previewImage, setPreviewImage] = useState<string>(currentUser?.img ? process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url : '/images/users/default.png');
 
     // Initialize social accounts from currentUser if available
     useEffect(() => {
