@@ -2,11 +2,12 @@
 import Pricing from '@/view/layout/pricing'
 
 // Utilities
-import { getPlans } from '@/core/utils/helper'
+// import { getPlans } from '@/core/utils/helper'
 import type { PlanTypes } from '@/core/types/pricing'
 
 export default async function PlanPage() {
-    const plan = await getPlans() as PlanTypes[]
+    // const plan = await getPlans() as PlanTypes[]
+    const plan = [] as PlanTypes[]
     
     return (
         <>

@@ -5,7 +5,7 @@ import classNames from 'classnames'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { RiAddLine, RiDeleteBinLine } from '@remixicon/react'
+import { RiAddLine, RiDeleteBinLine, RiCloseLine } from '@remixicon/react'
 import { useAuthentication } from '@/core/contexts/authentication'
 import { useTheme } from '@/core/contexts/theme'
 
@@ -37,6 +37,16 @@ interface TrackState {
     keys: string[];
 }
 
+interface UploadedFile {
+    id: number;
+    url: string;
+}
+
+interface FileUploadResponse {
+    id: number;
+    url: string;
+}
+
 const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB
 
 const SongCard: React.FC = () => {
@@ -50,6 +60,7 @@ const SongCard: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [uploadStatus, setUploadStatus] = useState('')
     const [activeTab, setActiveTab] = useState('track')
+    const [soundKitCoverPreview, setSoundKitCoverPreview] = useState<string | null>(null)
     const [tracks, setTracks] = useState<TrackState[]>([{
         id: Date.now().toString(),
         title: '',
@@ -89,6 +100,18 @@ const SongCard: React.FC = () => {
         }
     }, [currentUser, isLoading, router])
 
+    useEffect(() => {
+        if (isSubmitting) {
+            document.body.style.cursor = 'wait';
+        } else {
+            document.body.style.cursor = 'default';
+        }
+
+        return () => {
+            document.body.style.cursor = 'default';
+        };
+    }, [isSubmitting]);
+
     if (isLoading) {
         return (
             <div className="card">
@@ -110,56 +133,85 @@ const SongCard: React.FC = () => {
         { id: 'sound_kit', name: locale('upload_sound_kit') }
     ]
 
+    const uploadFileToStrapi = async (file: File): Promise<FileUploadResponse> => {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('Please log in to upload');
+        }
+
+        const formData = new FormData();
+        formData.append('files', file);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || 'File upload failed');
+        }
+
+        const data = await response.json();
+        return { id: data[0].id, url: data[0].url };
+    };
+
     const handleTrackSubmit = async (formData: TrackFormData) => {
         try {
-            setIsSubmitting(true)
-            setUploadError(null)
-            setUploadStatus('Validating files...')
+            setIsSubmitting(true);
+            setUploadError(null);
+            setUploadStatus('Uploading files...');
 
             if (!formData.cover || !formData.audio) {
-                throw new Error('Cover image and audio file are required')
+                throw new Error('Cover image and audio file are required');
             }
 
-            if (formData.cover.size > MAX_FILE_SIZE || formData.audio.size > MAX_FILE_SIZE) {
-                throw new Error('File size exceeds maximum allowed')
-            }
+            // First upload the files
+            const [coverUpload, audioUpload] = await Promise.all([
+                uploadFileToStrapi(formData.cover),
+                uploadFileToStrapi(formData.audio)
+            ]);
 
-            const token = localStorage.getItem('jwt')
-            if (!token) {
-                throw new Error('Please log in to upload')
-            }
+            setUploadStatus('Creating track...');
 
-            const uploadData = new FormData()
-            uploadData.append('files.cover', formData.cover)
-            uploadData.append('files.audio', formData.audio)
-            uploadData.append('data', JSON.stringify({
-                title: formData.title,
-                bpm: formData.bpm,
-                moods: formData.moods,
-                keys: formData.keys,
-                publishedAt: null
-            }))
-
-            setUploadStatus('Uploading...')
+            // Then create the track with file IDs
+            const token = localStorage.getItem('jwt');
             const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: uploadData
-            })
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    data: {
+                        title: formData.title,
+                        bpm: parseInt(formData.bpm) || 0,
+                        moods: formData.moods.join(','),
+                        keys: formData.keys.join(','),
+                        cover: coverUpload.id,
+                        audio: audioUpload.id,
+                        producer: currentUser.id
+                    }
+                })
+            });
 
             if (!response.ok) {
-                throw new Error('Upload failed')
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || 'Track creation failed');
             }
 
-            localStorage.setItem('settingsTab', 'Uploads')
-            router.push('/settings')
+            localStorage.setItem('settingsTab', 'Uploads');
+            router.push('/settings');
         } catch (error) {
-            setUploadError(error instanceof Error ? error.message : 'Upload failed')
-            setUploadStatus('')
+            setUploadError(error instanceof Error ? error.message : 'Upload failed');
+            setUploadStatus('');
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
-    }
+    };
 
     const addTrack = () => {
         setTracks([...tracks, {
@@ -183,6 +235,102 @@ const SongCard: React.FC = () => {
             track.id === id ? { ...track, [field]: value } : track
         ))
     }
+
+    const handleSoundKitSubmit = async (data: SoundKitFormData) => {
+        try {
+            setIsSubmitting(true);
+            setUploadError(null);
+            setUploadStatus('Uploading files...');
+
+            if (!data.cover) {
+                throw new Error('Cover image is required');
+            }
+
+            // Validate tracks
+            const invalidTracks = tracks.filter(track => 
+                !track.audio || 
+                !track.title || 
+                !track.bpm || 
+                track.title.trim().length < 3
+            );
+
+            if (invalidTracks.length > 0) {
+                throw new Error(`${invalidTracks.length} track(s) have missing or invalid information`);
+            }
+
+            // First upload all files
+            const coverUpload = await uploadFileToStrapi(data.cover);
+            
+            const audioUploads = await Promise.all(
+                tracks.map(track => track.audio && uploadFileToStrapi(track.audio as File))
+            );
+
+            setUploadStatus('Creating sound kit...');
+
+            // Then create the sound kit with file IDs
+            const token = localStorage.getItem('jwt');
+            
+            // First create tracks and store their IDs in array
+            const trackUploads = await Promise.all(
+                tracks.map(async (track, index) => {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            data: {
+                                title: track.title,
+                                bpm: parseInt(track.bpm) || 0,
+                                moods: track.moods.join(','),
+                                keys: track.keys.join(','),
+                                audio: audioUploads[index]?.id,
+                                cover: coverUpload.id,
+                                producer: currentUser.id
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error?.message || 'Track creation failed');
+                    }
+
+                    const data = await response.json();
+                    return data.data.id;
+                })
+            );
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/sound-kits`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    data: {
+                        title: data.title,
+                        cover: coverUpload.id,
+                        tracks: trackUploads,
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || 'Sound kit creation failed');
+            }
+
+            localStorage.setItem('settingsTab', 'Uploads');
+            router.push('/settings');
+        } catch (error) {
+            setUploadError(error instanceof Error ? error.message : 'Upload failed');
+            setUploadStatus('');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className='card'>
@@ -260,62 +408,7 @@ const SongCard: React.FC = () => {
                                 {uploadError}
                             </div>
                         )}
-                        <form onSubmit={soundKitForm.handleSubmit(async (data) => {
-                            try {
-                                setIsSubmitting(true);
-                                setUploadError(null);
-                                setUploadStatus('Validating files...');
-
-                                if (!data.cover) {
-                                    throw new Error('Cover image is required');
-                                }
-
-                                if (tracks.some(track => !track.audio || !track.title)) {
-                                    throw new Error('All tracks must have audio files and titles');
-                                }
-
-                                const token = localStorage.getItem('jwt');
-                                if (!token) {
-                                    throw new Error('Please log in to upload');
-                                }
-
-                                const uploadData = new FormData();
-                                uploadData.append('files.cover', data.cover);
-                                tracks.forEach((track, index) => {
-                                    uploadData.append(`files.audio_${index}`, track.audio as File);
-                                });
-
-                                uploadData.append('data', JSON.stringify({
-                                    title: data.title,
-                                    tracks: tracks.map(track => ({
-                                        title: track.title,
-                                        bpm: track.bpm,
-                                        moods: track.moods,
-                                        keys: track.keys
-                                    })),
-                                    publishedAt: null
-                                }));
-
-                                setUploadStatus('Uploading...');
-                                const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks/sound-kit`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}` },
-                                    body: uploadData
-                                });
-
-                                if (!response.ok) {
-                                    throw new Error('Upload failed');
-                                }
-
-                                localStorage.setItem('settingsTab', 'Uploads');
-                                router.push('/settings');
-                            } catch (error) {
-                                setUploadError(error instanceof Error ? error.message : 'Upload failed');
-                                setUploadStatus('');
-                            } finally {
-                                setIsSubmitting(false);
-                            }
-                        })}>
+                        <form onSubmit={soundKitForm.handleSubmit(handleSoundKitSubmit)}>
                             <div className="row g-4">
                                 <div className='col-12'>
                                     <label className='form-label'>{locale('sound_kit_title')}</label>
@@ -334,17 +427,45 @@ const SongCard: React.FC = () => {
                                 </div>
                                 <div className='col-12'>
                                     <label className='form-label'>{locale('cover_image')}</label>
-                                    <Dropzone
-                                        title={locale('drag_and_drop')}
-                                        accept={{ 'image/*': ['.jpeg', '.jpg', '.png'] }}
-                                        maxFiles={1}
-                                        disabled={isSubmitting}
-                                        onDrop={(acceptedFiles) => {
-                                            if (acceptedFiles[0]) {
-                                                soundKitForm.setValue('cover', acceptedFiles[0])
-                                            }
-                                        }}
-                                    />
+                                    <div className="position-relative">
+                                        <Dropzone
+                                            title={soundKitForm.watch('cover') ? '' : locale('drag_and_drop')}
+                                            accept={{ 'image/*': ['.jpeg', '.jpg', '.png'] }}
+                                            maxFiles={1}
+                                            disabled={isSubmitting}
+                                            onDrop={(acceptedFiles) => {
+                                                if (acceptedFiles[0]) {
+                                                    soundKitForm.setValue('cover', acceptedFiles[0])
+                                                }
+                                            }}
+                                        >
+                                            {soundKitForm.watch('cover') && (
+                                                <div className="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center">
+                                                    <div className="text-center">
+                                                        <img 
+                                                            src={URL.createObjectURL(soundKitForm.watch('cover')!)} 
+                                                            alt="Cover preview" 
+                                                            className="img-thumbnail mb-2" 
+                                                            style={{ maxHeight: '100px', maxWidth: '100px' }} 
+                                                        />
+                                                        <div className="d-flex align-items-center justify-content-center">
+                                                            <small className="text-muted me-2">{soundKitForm.watch('cover')!.name}</small>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline-danger"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    soundKitForm.setValue('cover', null)
+                                                                }}
+                                                            >
+                                                                <RiCloseLine />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </Dropzone>
+                                    </div>
                                 </div>
                                 {tracks.map((track, index) => (
                                     <div key={track.id} className="col-12 border rounded p-3 position-relative">
@@ -370,18 +491,45 @@ const SongCard: React.FC = () => {
                                             </div>
                                             <div className="col-12">
                                                 <label className="form-label">{locale('audio_file')}</label>
-                                                <Dropzone
-                                                    title={locale('drag_and_drop')}
-                                                    accept={{ 'audio/*': ['.mp3', '.wav'] }}
-                                                    maxFiles={1}
-                                                    disabled={isSubmitting}
-                                                    onDrop={(acceptedFiles) => {
-                                                        if (acceptedFiles[0]) {
-                                                            updateTrack(track.id, 'audio', acceptedFiles[0])
-                                                        }
-                                                    }}
-                                                    style={{ height: '150px' }}
-                                                />
+                                                <div className="position-relative">
+                                                    <Dropzone
+                                                        title={track.audio ? '' : locale('drag_and_drop')}
+                                                        accept={{ 'audio/*': ['.mp3', '.wav'] }}
+                                                        maxFiles={1}
+                                                        disabled={isSubmitting}
+                                                        onDrop={(acceptedFiles) => {
+                                                            if (acceptedFiles[0]) {
+                                                                updateTrack(track.id, 'audio', acceptedFiles[0])
+                                                            }
+                                                        }}
+                                                        style={{ height: '150px' }}
+                                                    >
+                                                        {track.audio && (
+                                                            <div className="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center">
+                                                                <div className="text-center">
+                                                                    <div className="mb-2">
+                                                                        <i className="ri-music-2-line ri-2x text-primary"></i>
+                                                                    </div>
+                                                                    <div className="d-flex align-items-center justify-content-center">
+                                                                        <small className="text-muted me-2">
+                                                                            {(track.audio as File).name} ({Math.round((track.audio as File).size / (1024 * 1024))}MB)
+                                                                        </small>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-sm btn-outline-danger"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                updateTrack(track.id, 'audio', null)
+                                                                            }}
+                                                                        >
+                                                                            <RiCloseLine />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </Dropzone>
+                                                </div>
                                             </div>
                                             <div className="col-12">
                                                 <label className="form-label">BPM</label>

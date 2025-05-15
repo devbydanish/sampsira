@@ -16,7 +16,7 @@ const UserUploads: React.FC = () => {
         { id: 'sound_kits', name: locale('sound_kits') }
     ]
 
-    const tracks = currentUser?.tracks?.map((item:any) => ({
+    const tracks = currentUser?.tracks?.filter((item:any) => !item.isSoundKit).map((item:any) => ({
         ...item,
         cover: item.cover.url ? process.env.NEXT_PUBLIC_STRAPI_URL + item.cover.url : '/images/cover/default.jpg',
         src: process.env.NEXT_PUBLIC_STRAPI_URL + item.audio.url,
