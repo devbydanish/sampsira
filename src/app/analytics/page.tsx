@@ -36,6 +36,36 @@ interface User {
   credits: number;
   totalIncome: number;
   total_withdrawn: number;
+  tracks: any[];
+}
+
+interface Track {
+  id: number;
+  attributes: {
+    title: string;
+    credits: number;
+    isSoundKit: boolean;
+    user: {
+      data: {
+        id: number;
+        attributes: {
+          username: string;
+        }
+      }
+    }
+    cover: {
+      data: {
+        attributes: {
+          formats: {
+            thumbnail: {
+              url: string;
+            }
+          }
+          url: string;
+        }
+      }
+    }
+  }
 }
 
 export default function AnalyticsPage() {
@@ -49,41 +79,25 @@ export default function AnalyticsPage() {
   const [trackCount, setTrackCount] = useState(0);
   const [soundKitCount, setSoundKitCount] = useState(0);
 
+
+  // Update counts when user data changes
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const [tracksResponse, soundKitsResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks?filters[user][id][$eq]=${user?.id}&pagination[pageSize]=1`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('jwt')}`
-            }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/sound-kits?filters[user][id][$eq]=${user?.id}&pagination[pageSize]=1`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('jwt')}`
-            }
-          })
-        ]);
-
-        const tracksData = await tracksResponse.json();
-        const soundKitsData = await soundKitsResponse.json();
-
-        setTrackCount(tracksData.meta.pagination.total);
-        setSoundKitCount(soundKitsData.meta.pagination.total);
-      } catch (error) {
-        console.error('Error fetching counts:', error);
-      }
-    };
-
-    if (user?.id) {
-      fetchCounts();
+    if (user?.tracks) {
+      const tracks = user.tracks;
+      const regularTracks = tracks.filter(track => !track?.isSoundKit);
+      const soundKits = tracks.filter(track => track?.isSoundKit);
+      
+      setTrackCount(regularTracks.length);
+      setSoundKitCount(soundKits.length);
     }
+
+    
   }, [user?.id]);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate=*`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('jwt')}`
           }
@@ -130,13 +144,14 @@ export default function AnalyticsPage() {
 
   const credits = user?.credits || 0;
   const incomeEarned = credits * 0.50;
+  const totalWithdrawn = user?.total_withdrawn || 0;
   
   const summaryData = [
     { label: "Sound Kits", value: soundKitCount.toString(), change: "0%" },
     { label: "Tracks", value: trackCount.toString(), change: "0%" },
     { label: "Credits", value: credits.toString(), change: "0%" },
     { label: "Income Earned", value: `$${incomeEarned.toFixed(2)}`, change: null },
-    { label: "Total Withdrawn", value: `$${user?.total_withdrawn || "0.00"}`, change: null },
+    { label: "Total Withdrawn", value: `$${totalWithdrawn.toFixed(2)}`, change: null },
   ];
 
   const canWithdraw = incomeEarned >= 50;
@@ -165,6 +180,11 @@ export default function AnalyticsPage() {
 
   const handleMetricClick = (metric: string) => {
     setActiveMetric(metric);
+  };
+
+  // Calculate total earned for each track
+  const calculateEarnings = (credits: number) => {
+    return (credits * 0.50).toFixed(2);
   };
 
   return (
@@ -310,40 +330,27 @@ export default function AnalyticsPage() {
           </tr>
         </thead>
         <tbody>
-          {[
-            {
-              title: "Reggaeton Type Beat 98BPM",
-              artist: "Feniko",
-              likes: "1",
-              credits: "134",
-              downloads: "665",
-              earnings: "$33.50",
-              image: "/images/tracks/reggaeton.jpg",
-            },
-            {
-              title: "Dark Trap Type Beat 90BPM",
-              artist: "Feniko",
-              likes: "0",
-              credits: "0",
-              downloads: "3",
-              earnings: "$0.00",
-              image: "/images/tracks/darktrap.jpg",
-            },
-          ]
-            .filter((track) => track.title.toLowerCase().includes(searchTerm.toLowerCase()))
-            .map((track, index) => (
-              <tr key={index}>
-                <td className="track-info">
-                  <img src={track.image} alt={track.title} className="track-image" />
-                  <div className="track-details">
-                    <span className="track-title">{track.title}</span>
-                    <span className="track-artist">{track.artist}</span>
-                  </div>
-                </td>
-                <td>{track.credits}</td>
-                <td>{track.earnings}</td>
-              </tr>
-            ))}
+          {user?.tracks && user.tracks.length > 0 ? (
+            user.tracks
+              .filter((track) => 
+                track.title.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((track) => (
+                <tr key={track.id}>
+                  <td className="track-info">
+                    <div className="track-details">
+                      <span className="track-title">{track.title}</span>
+                    </div>
+                  </td>
+                  <td>{track.credits || 0}</td>
+                  <td>${calculateEarnings(track.credits || 0)}</td>
+                </tr>
+              ))
+          ) : (
+            <tr>
+              <td colSpan={3} className="text-center">No tracks found</td>
+            </tr>
+          )}
         </tbody>
       </Table>
       </div>
