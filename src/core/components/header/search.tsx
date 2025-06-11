@@ -23,35 +23,105 @@ import Scrollbar from '../scrollbar'
 // Utilities
 import { SEARCH_RESULTS } from '@/core/constants/constant'
 
-interface Track {
+interface MediaFormat {
+    name: string;
+    hash: string;
+    ext: string;
+    mime: string;
+    width: number;
+    height: number;
+    size: number;
+    url: string;
+}
+
+interface Media {
+    data: {
+        id: number;
+        attributes: {
+            name: string;
+            formats: {
+                thumbnail: MediaFormat;
+                small: MediaFormat;
+                medium: MediaFormat;
+                large: MediaFormat;
+            };
+            url: string;
+            mime: string;
+        }
+    }
+}
+
+interface Sample {
     id: number;
     attributes: {
         title: string;
         bpm: number;
+        genre: string;
         moods: string;
         keys: string;
-        genre: string;
-        cover: {
-            data: {
-                attributes: {
-                    formats: {
-                        small: {
-                            url: string;
-                        };
-                    };
-                    url: string;
-                };
-            };
-        };
+        isSoundKit: boolean;
+        cover: Media;
+        audio: Media;
         producer: {
             data: {
                 id: number;
                 attributes: {
+                    username: string;
                     displayName: string;
-                };
-            };
+                }
+            }
+        }
+    }
+}
+
+interface SoundKit {
+    id: number;
+    attributes: {
+        title: string;
+        cover: Media;
+        producer: {
+            data: {
+                id: number;
+                attributes: {
+                    username: string;
+                    displayName: string;
+                }
+            }
+        }
+    }
+}
+
+interface Producer {
+    id: number;
+    username: string;
+    email: string;
+    displayName: string;
+    firstName: string;
+    lastName: string;
+    isProducer: boolean;
+    tracks: Array<{
+        id: number;
+        title: string;
+        bpm: number;
+        genre: string;
+        moods: string;
+        keys: string;
+    }>;
+    img?: {
+        formats: {
+            thumbnail: { url: string };
+            small: { url: string };
+            medium: { url: string };
+            large: { url: string };
         };
+        url: string;
     };
+}
+
+interface SearchResults {
+    samples: Sample[];
+    producers: Producer[];
+    soundKits: SoundKit[];
 }
 
 const Search: React.FC = () => {
@@ -84,25 +154,58 @@ const Search: React.FC = () => {
             return
         }
 
+        const initialSearchData: SearchResults = {
+            samples: [],
+            producers: [],
+            soundKits: []
+        };
+
         try {
             setIsLoading(true)
-            const token = localStorage.getItem('jwt')
-            if (!token) return
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks?filters[title][$containsi]=${query}&populate=*`
-            )
+            const [tracksResponse, soundKitResponse, producersResponse] = await Promise.all([
+                fetch(
+                    `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/tracks?filters[title][$containsi]=${query}&populate=*`,
+                    { signal: AbortSignal.timeout(10000) }
+                ),
+                fetch(
+                    `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/sound-kits?filters[title][$containsi]=${query}&populate=*`,
+                    { signal: AbortSignal.timeout(10000) }
+                ),
+                fetch(
+                    `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?filters[username][$containsi]=${query}&filters[isProducer][$eq]=true&populate=*`,
+                    { signal: AbortSignal.timeout(10000) }
+                )
+            ]);
 
-            if (response.ok) {
-                const data = await response.json()
-                setSearchResults({
-                    samples: data.data || [],
-                    soundKits: [],
-                    producers: []
-                })
+            const searchData = { ...initialSearchData };
+
+            if (tracksResponse.ok) {
+                const data = await tracksResponse.json();
+                searchData.samples = data.data;
+            } else {
+                console.error('Failed to fetch tracks:', tracksResponse.statusText);
             }
+
+            if (soundKitResponse.ok) {
+                const data = await soundKitResponse.json();
+                searchData.soundKits = data.data;
+            } else {
+                console.error('Failed to fetch sound kits:', soundKitResponse.statusText);
+            }
+
+            if (producersResponse.ok) {
+                const data = await producersResponse.json();
+                searchData.producers = Array.isArray(data) ? data : [];
+            } else {
+                console.error('Failed to fetch producers:', producersResponse.statusText);
+            }
+
+            console.log(searchData)
+            setSearchResults(searchData)
         } catch (error) {
             console.error('Search error:', error)
+            setSearchResults(initialSearchData)
         } finally {
             setIsLoading(false)
         }
@@ -205,7 +308,7 @@ const Search: React.FC = () => {
                                             </div>
                                         </div>
                                     ) : searchResults.samples.length > 0 && (
-                                        searchResults.samples.map((track: Track) => (
+                                        searchResults.samples.map((track: Sample) => (
                                             <div key={track.id} className='col-xl-3 col-md-4 col-sm-6'>
                                                 <div className='list__item'>
                                                     <Link href={`/samples/${track.id}`} className='list__cover'>
@@ -254,26 +357,29 @@ const Search: React.FC = () => {
                                             </div>
                                         </div>
                                     ) : searchResults.soundKits.length > 0 && (
-                                        searchResults.soundKits.map((kit: any) => (
+                                        searchResults.soundKits.map((kit: SoundKit) => (
                                             <div key={kit.id} className='col-xl-3 col-md-4 col-sm-6'>
                                                 <div className='list__item'>
                                                     <Link href={`/sound_kits/${kit.id}`} className='list__cover'>
                                                         <div className='ratio ratio-1x1'>
                                                             <Image
-                                                                src={kit.cover?.url || '/images/cover/small/default.jpg'}
+                                                                src={kit.attributes.cover?.data?.attributes?.formats?.small?.url 
+                                                                    ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${kit.attributes.cover.data.attributes.formats.small.url}`
+                                                                    : '/images/cover/small/default.jpg'
+                                                                }
                                                                 width={128}
                                                                 height={128}
-                                                                alt={kit.title}
+                                                                alt={kit.attributes.title}
                                                             />
                                                         </div>
                                                     </Link>
                                                     <div className='list__content'>
                                                         <Link href={`/sound_kits/${kit.id}`} className='list__title text-truncate'>
-                                                            {kit.title}
+                                                            {kit.attributes.title}
                                                         </Link>
                                                         <div className='list__subtitle text-truncate'>
-                                                            <Link href={`/producers/${kit.producer.id}`}>
-                                                                {kit.producer.name}
+                                                            <Link href={`/producers/${kit.attributes.producer.data.id}`}>
+                                                                {kit.attributes.producer.data.attributes.displayName}
                                                             </Link>
                                                         </div>
                                                     </div>
@@ -299,22 +405,25 @@ const Search: React.FC = () => {
                                             </div>
                                         </div>
                                     ) : searchResults.producers.length > 0 && (
-                                        searchResults.producers.map((producer: any) => (
+                                        searchResults.producers.map((producer: Producer) => (
                                             <div key={producer.id} className='col-xl-3 col-md-4 col-sm-6'>
                                                 <div className='list__item'>
                                                     <Link href={`/producers/${producer.id}`} className='list__cover'>
                                                         <div className='ratio ratio-1x1'>
                                                             <Image
-                                                                src={producer.cover || '/images/cover/large/default.jpg'}
+                                                                src={producer.img?.url 
+                                                                    ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${producer.img.url}`
+                                                                    : '/images/cover/large/default.jpg'
+                                                                }
                                                                 width={128}
                                                                 height={128}
-                                                                alt={producer.name}
+                                                                alt={producer.displayName}
                                                             />
                                                         </div>
                                                     </Link>
                                                     <div className='list__content'>
                                                         <Link href={`/producers/${producer.id}`} className='list__title text-truncate'>
-                                                            {producer.name}
+                                                            {producer.displayName}
                                                         </Link>
                                                     </div>
                                                 </div>
