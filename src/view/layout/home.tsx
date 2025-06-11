@@ -7,7 +7,7 @@
 
 
 // Modules
-import React from 'react'
+import React, { useMemo } from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import Link from 'next/link'
@@ -24,16 +24,44 @@ import { title } from '@/core/utils'
 import {
     SoundKitTypes,
     ProducerTypes,
-    TrackTypes
 } from '@/core/types'
 import { BRAND, SOCIAL } from '@/core/constants/constant'
 
+// Types
+interface Track {
+    id: number;
+    title: string;
+    type: string;
+    cover: string;
+    src: string;
+    duration: string;
+    href: string;
+    thumb: string;
+    date: string;
+    rating: number | null;
+    played: number | null;
+    downloads: number;
+    keys: string[];
+    moods: string[];
+    genre: Array<{
+        id: number;
+        name: string;
+    }>;
+    categories: any[];
+    producers: any[];
+    Producers: Array<{
+        id: number;
+        name: string;
+    }>;
+    bpm: number;
+}
 
 interface Props {
     soundKits: SoundKitTypes[]
     Producers: ProducerTypes[]
-    tracks: TrackTypes[]
+    tracks: Track[]
 }
+
 const propTypes = {
     /**
      * Set sound kits data
@@ -64,57 +92,50 @@ const Home: React.FC<Props> = ({
 
     const locale = useTranslations()
     const footer = useTranslations('footer')
+    console.log(tracks)
     
-
-    // 
-    // Data for tab list view
-    const tabs = [
-		{
-			id: 'reggaeton',
-			name: locale('reggaeton'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'trap',
-			name: locale('trap'),
-			list: [...tracks].slice(5)
-		},
-		{
-			id: 'hiphop_rap',
-			name: locale('hiphop_rap'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'drill',
-			name: locale('drill'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'techno',
-			name: locale('techno'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'drumandbass',
-			name: locale('drumandbass'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'jersey_club',
-			name: locale('jersey_club'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'dancehall',
-			name: locale('dancehall'),
-			list: [...tracks].slice(0, 5)
-		},
-		{
-			id: 'afrobeat',
-			name: locale('afrobeat'),
-			list: [...tracks].slice(0, 5)
-		},
-	]
+    // Create genre-specific track lists
+    const genreTabs = useMemo(() => {
+        // Define genres we want to display
+        const genreIds = [
+            'reggaeton',
+            'trap',
+            'hiphop_rap',
+            'drill',
+            'techno',
+            'drumandbass',
+            'jersey_club',
+            'dancehall',
+            'afrobeat',
+        ];
+        
+        // Create tabs with filtered tracks for each genre
+        return genreIds.map(genreId => {
+            // Filter tracks that have this genre
+            const genreTracks = tracks.filter(track => 
+                track.genre.some(g => 
+                    g.name.toLowerCase() === genreId.toLowerCase()
+                )
+            );
+            
+            // If no tracks found for this genre, use a maximum of 5 random tracks 
+            // as a fallback (but only if the genre is not reggaeton)
+            // const trackList = genreId === 'reggaeton' 
+            //     ? genreTracks 
+            //     : (genreTracks.length > 0 
+            //         ? genreTracks 
+            //         : [...tracks].slice(0, 5));
+            
+            // // Limit to 5 tracks per genre
+            const limitedTracks = genreTracks;
+            
+            return {
+                id: genreId,
+                name: locale(genreId),
+                list: limitedTracks
+            };
+        });
+    }, [tracks, locale]);
 
     // 
 	// Divide sound kits data into two part to set a design.
@@ -158,7 +179,7 @@ const Home: React.FC<Props> = ({
                         dangerouslySetInnerHTML={{ __html: title(locale, 'top_tracks_genre_title') }}
                     />
                     <Tab id='tracks_list'>
-                        {tabs.map((tab, index) => (
+                        {genreTabs.map((tab, index) => (
                             <li 
                                 key={tab.id}
                                 className='nav-item' 
@@ -183,7 +204,7 @@ const Home: React.FC<Props> = ({
                         ))}
                     </Tab>
                     <div className='tab-content mt-4' id='tracks_list_content'>
-                        {tabs.map((tab, index) => (
+                        {genreTabs.map((tab, index) => (
                             <div 
                                 key={tab.id}
                                 id={tab.id + '_pane'}
@@ -195,19 +216,27 @@ const Home: React.FC<Props> = ({
                                     index === 0 && 'show active'
                                 )}
                             >
-                                {/* List [[ Find at scss/components/list.scss ]] */}
                                 <div className='list'>
-                                    {tab.list.map((item: any, listIndex: number) => (
-                                        <TrackList
-                                            key={listIndex}
-                                            data={item}
-                                            play
-                                            duration
-                                            download
-                                            dropdown
-                                            link
-                                        />
-                                    ))}
+                                    {tab.list.length > 0 ? (
+                                        tab.list.map((track: Track) => (
+                                            <TrackList
+                                                key={track.id}
+                                                data={{
+                                                    ...track,
+                                                    producer: track.Producers?.[0] || null,
+                                                }}
+                                                play
+                                                duration
+                                                download
+                                                dropdown
+                                                link
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-4">
+                                            <p>No tracks found for this genre</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -248,28 +277,29 @@ const Home: React.FC<Props> = ({
 
             <section className='container'>
                 {/* Newsletter [[ Find at scss/base/core.scss ]] */}
-                <div className='newsletter text-white'>
-                    <div className='col-xl-7 col-lg-10 fs-5 mx-auto text-center'>
-                        <h2 className='text-white'>
-                            {footer('title') + ' '} 
-                            <span className='newsletter__title-text'>{BRAND.name}</span>
-                        </h2>
-                        <p>{footer('description')}</p>
-                        <Link href='/auth/register' className='btn btn-lg btn-white mt-3'>
-                            {locale('register_now')}
-                        </Link>
+                <div className='newsletter'>
+                    <div className='newsletter__content'>
+                        <h2>{footer('newsletter_title')}</h2>
+                        <p>{footer('newsletter_subtitle')}</p>
+                        <form action='#'>
+                            <div className='form-group'>
+                                <input
+                                    type='text'
+                                    className='form-control'
+                                    placeholder={footer('newsletter_email')}
+                                />
+                                <button type='button' className='btn'>
+                                    {footer('newsletter_subscribe')}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </section>
-            
-            {/* <Blog /> */}
-
         </div>
     )
 }
 
-
-Home.propTypes = propTypes as any
-Home.displayName = 'Home'
+Home.propTypes = propTypes
 
 export default Home
