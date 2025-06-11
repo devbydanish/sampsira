@@ -26,6 +26,7 @@
 // Image cover
 .cover {
     position: relative;
+    border-radius: $cover-border-radius;
     @include cover-border-radius();
 
     // Cover head
@@ -78,7 +79,6 @@
         .ratio {
             overflow: hidden;
             display: block;
-            background-color: $cover-image-bg;
         }
 
         img {
@@ -143,11 +143,17 @@
         }
     }
 
-    // Desktop & Tablet
-    // Bootstrap mixin
-    @include media-breakpoint-up(sm) {
-        &.cover--round {
-            @include cover-border-radius($cover-border-radius-lg);
-        }
+    // All devices
+    &.cover--round {
+        border-radius: $cover-border-radius-lg;
+        @include cover-border-radius($cover-border-radius-lg);
+    }
+}
+
+// Dropdown menu item hover effect
+.menu-item-hover {
+    &:hover {
+        color: rgba(108, 117, 125, 0.8) !important;
+        background-color: transparent !important;
     }
 }

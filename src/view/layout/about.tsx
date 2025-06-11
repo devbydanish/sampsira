@@ -36,7 +36,7 @@ const About: React.FC = () => {
     return (
         <>
             {/* Main section [[ Find at scss/framework/section.scss ]] */}
-			<div className='main-section pb-0'>
+			<div className='main-section pb-0' style={{ marginTop: '100px' }}>
 				<div className='container'>
 					<div className='col-xl-9 col-lg-10'>
 						<h1 

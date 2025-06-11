@@ -12092,7 +12092,7 @@ html:not([dir=rtl]) .feature .feature__icon:before {
   width: 2rem;
   height: 2rem;
   position: relative;
-  background-color: #EFF2F5;
+  background-color: transparent;
   border-radius: 50%;
   overflow: hidden;
   display: block;
@@ -12687,6 +12687,7 @@ html:not([dir=rtl]) .swiper-carousel .swiper-button-prev {
 
 .cover {
   position: relative;
+  border-radius: 0.5rem;
 }
 .cover .cover__head:before {
   border-top-left-radius: 0.5rem;
@@ -12751,7 +12752,6 @@ html:not([dir=rtl]) .cover .cover__label li:not(:first-of-type) {
 .cover .cover__image .ratio {
   overflow: hidden;
   display: block;
-  background-color: #EFF2F5;
 }
 .cover .cover__image img {
   max-width: 100%;
@@ -12804,18 +12804,19 @@ html:not([dir=rtl]) .cover .cover__label li:not(:first-of-type) {
   opacity: 1;
   visibility: visible;
 }
-@media (min-width: 576px) {
-  .cover.cover--round .cover__head:before {
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
-  }
-  .cover.cover--round .cover__image .ratio {
-    border-radius: 1rem;
-  }
-  .cover.cover--round .cover__image .cover__image__content {
-    border-bottom-left-radius: 1rem;
-    border-bottom-right-radius: 1rem;
-  }
+.cover.cover--round {
+  border-radius: 1rem;
+}
+.cover.cover--round .cover__head:before {
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+.cover.cover--round .cover__image .ratio {
+  border-radius: 1rem;
+}
+.cover.cover--round .cover__image .cover__image__content {
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
 }
 
 .list .list__item {
@@ -12843,7 +12844,7 @@ html:not([dir=rtl]) .cover .cover__label li:not(:first-of-type) {
   border-radius: 0.25rem;
   overflow: hidden;
   display: block;
-  background-color: #EFF2F5;
+  background-color: transparent;
 }
 .list .list__cover .btn-play {
   position: absolute;

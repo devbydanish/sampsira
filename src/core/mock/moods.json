@@ -1,21 +1,17 @@
 {
   "code": 200,
   "data": [
-    {
-      "id": 1,
-      "title": "Chill",
-      "cover": "/images/cover/medium/1.jpg",
-      "type": "mood",
-      "href": "/mood/chill",
-      "tracks": []
-    },
-    {
-      "id": 2,
-      "title": "Energy",
-      "cover": "/images/cover/medium/2.jpg",
-      "type": "mood",
-      "href": "/mood/energy",
-      "tracks": []
-    }
+    { "id": 1, "title": "Happy", "cover": "/images/cover/medium/1.jpg", "type": "mood", "href": "/mood/happy", "tracks": [] },
+    { "id": 2, "title": "Sad", "cover": "/images/cover/medium/2.jpg", "type": "mood", "href": "/mood/sad", "tracks": [] },
+    { "id": 3, "title": "Energetic", "cover": "/images/cover/medium/3.jpg", "type": "mood", "href": "/mood/energetic", "tracks": [] },
+    { "id": 4, "title": "Chill", "cover": "/images/cover/medium/4.jpg", "type": "mood", "href": "/mood/chill", "tracks": [] },
+    { "id": 5, "title": "Aggressive", "cover": "/images/cover/medium/5.jpg", "type": "mood", "href": "/mood/aggressive", "tracks": [] },
+    { "id": 6, "title": "Romantic", "cover": "/images/cover/medium/6.jpg", "type": "mood", "href": "/mood/romantic", "tracks": [] },
+    { "id": 7, "title": "Dark", "cover": "/images/cover/medium/7.jpg", "type": "mood", "href": "/mood/dark", "tracks": [] },
+    { "id": 8, "title": "Upbeat", "cover": "/images/cover/medium/8.jpg", "type": "mood", "href": "/mood/upbeat", "tracks": [] },
+    { "id": 9, "title": "Melancholic", "cover": "/images/cover/medium/9.jpg", "type": "mood", "href": "/mood/melancholic", "tracks": [] },
+    { "id": 10, "title": "Epic", "cover": "/images/cover/medium/10.jpg", "type": "mood", "href": "/mood/epic", "tracks": [] },
+    { "id": 11, "title": "Dreamy", "cover": "/images/cover/medium/1.jpg", "type": "mood", "href": "/mood/dreamy", "tracks": [] },
+    { "id": 12, "title": "Intense", "cover": "/images/cover/medium/2.jpg", "type": "mood", "href": "/mood/intense", "tracks": [] }
   ]
 }

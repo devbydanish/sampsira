@@ -54,32 +54,35 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
     const isSubscription = plan.id === 'monthly-subscription';
 
     return (
-        <div className='card plan__col'>
-            <div className='card-body'>
-                <div className='plan-header'>
-                    {isSubscription ? <RiVipCrownLine size={32} className="text-primary" /> : <RiCoinsLine size={32} className="text-primary" />}
-                    <h3 className='plan-title' dangerouslySetInnerHTML={{ __html: plan.name }} />
+        <div className='card h-100 shadow border-0' style={{ borderRadius: '12px', maxWidth: '500px', margin: '0 auto' }}>
+            <div className='card-body d-flex flex-column p-5'>
+                <div className='text-center mb-4'>
+                    {isSubscription ?
+                        <RiVipCrownLine size={40} className="text-primary mb-3" />
+                        :
+                        <RiCoinsLine size={40} className="text-primary mb-3" />
+                    }
+                    <h3 className='plan-title text-black mb-2 fw-bold' dangerouslySetInnerHTML={{ __html: plan.name }} />
+                    <p className='text-muted mb-4'>{isSubscription ? pricing('unlimited_access') : pricing('pay_as_you_go')}</p>
+                    
+                    <div className='price-tag mb-4 pb-2 border-bottom'>
+                        <span className='amount display-5 fw-bold'>${plan.price}</span>
+                        {isSubscription && <span className='period text-muted ms-2'>/{pricing('month')}</span>}
+                    </div>
                 </div>
 
-                <p className='text-muted'>{plan.subtitle || pricing('plan_subtitle')}</p>
-
-                <div className='price-tag'>
-                    <span className='amount'>${plan.price}</span>
-                    {isSubscription && <span className='period'>/{pricing('month')}</span>}
-                </div>
-
-                <div className='card-features'>
+                <div className='card-features flex-grow-1 mb-4'>
                     {plan.features.map(feature => (
-                        <div key={feature.id} className='feature-item'>
+                        <div key={feature.id} className='feature-item py-2 d-flex align-items-center'>
                             <FeatureIcon iconName={feature.icon || 'download'} />
-                            <span>{feature.name}</span>
+                            <span className="ms-4 text-secondary">{feature.name}</span>
                         </div>
                     ))}
                 </div>
 
                 <button
                     type='button'
-                    className='btn btn-primary w-100'
+                    className='btn btn-primary w-100 py-3'
                     onClick={() => onPurchase(plan.stripeProductId, isSubscription)}
                 >
                     {isSubscription ? pricing('subscribe') : pricing('buyCredits')}
@@ -90,6 +93,7 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
 };
 
 const Pricing: React.FC<Props> = ({data}) => {
+    const pricing = useTranslations('pricing');
     const handlePurchase = async (stripeProductId: string, isSubscription: boolean = false) => {
         const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
         if (!stripe) {
@@ -132,32 +136,24 @@ const Pricing: React.FC<Props> = ({data}) => {
     const creditPlans = data.filter(plan => typeof plan.id === 'string' && plan.id.startsWith('credits-'));
 
     return (
-        <div className='plan bg-light'>
-            <div className='plan__data d-flex flex-md-row flex-column'>
-                <div className='col-md-6 col-12 pe-md-3'>
-                    <h4 className='mb-4 text-black'>
-                        <RiVipCrownLine className='text-primary me-2' size={24} />
-                        Monthly Subscription
-                        <small className='d-block text-muted fs-6 mt-1'>
-                            Subscribe for premium features & monthly credits
-                        </small>
-                    </h4>
-                    {subscriptionPlans.map(plan => (
-                        <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
-                    ))}
+        <div className='plan py-5'>
+            <div className='container-lg'>
+                <div className='text-center mb-5'>
+                    <h2 className='h1 mb-3'>{pricing('plan_subtitle')}</h2>
+                    <p className='text-muted fs-5'>{pricing('pay_as_you_go')}</p>
                 </div>
+                <div className='row justify-content-center align-items-stretch g-5'>
+                    <div className='col-12 col-lg-6'>
+                        {subscriptionPlans.map(plan => (
+                            <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
+                        ))}
+                    </div>
 
-                <div className='col-md-6 col-12 ps-md-3 mt-md-0 mt-4'>
-                    <h4 className='mb-4 text-black'>
-                        <RiCoinsLine className='text-primary me-2' size={24} />
-                        Purchase Credits
-                        <small className='d-block text-muted fs-6 mt-1'>
-                            Purchase credits to download samples
-                        </small>
-                    </h4>
-                    {creditPlans.map(plan => (
-                        <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
-                    ))}
+                    <div className='col-12 col-lg-6'>
+                        {creditPlans.map(plan => (
+                            <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

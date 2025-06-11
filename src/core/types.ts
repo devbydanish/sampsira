@@ -211,14 +211,23 @@ export type TrackTypes = {
  */
 export type ProducerTypes = PersonTypes & {
     totalSoundKits?: number
+    displayName?: string;
     totalTracks?: number
     rating?: number
     likes?: number
     description?: string
+    bio?: string
     href: string
     type: string
     tracks?: TrackTypes[]
+    soundKits?: SoundKitTypes[]
     isProducer?: boolean
+    socialAccounts?: {
+        instagram?: { connected: boolean; username: string };
+        facebook?: { connected: boolean; username: string };
+        youtube?: { connected: boolean; username: string };
+        tiktok?: { connected: boolean; username: string };
+    }
 }
 
 /**

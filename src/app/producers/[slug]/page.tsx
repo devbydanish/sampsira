@@ -1,78 +1,123 @@
+"use client"
 
-// Modules
-import { getTranslations } from 'next-intl/server'
+import { useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
+import { useProducers } from '@/redux/hooks'
+import LoadingSpinner from '@/core/components/loading-spinner'
 
 // Components
-import CoverInfo from '@/core/components/cover-info'
 import Section from '@/view/layout/section'
-import Comments from '@/core/components/comments'
 import TrackList from '@/core/components/list'
+import ProfileInfo from './ProfileInfo'
 
-// Utilities
-import { title } from '@/core/utils'
-import { getAlbums, getProducers } from '@/core/utils/helper'
-import { ProducerTypes, ParamsTypes } from '@/core/types'
+// Types
+import { ProducerTypes, TrackTypes, SoundKitTypes } from '@/core/types'
 
+type ProducerWithDetails = ProducerTypes & {
+    bio?: string;
+    socialAccounts?: {
+        instagram?: { connected: boolean; username: string };
+        facebook?: { connected: boolean; username: string };
+        youtube?: { connected: boolean; username: string };
+        tiktok?: { connected: boolean; username: string };
+    };
+    tracks?: TrackTypes[];
+    soundKits?: SoundKitTypes[];
+}
 
-export default async function ProducerDetailsPage({params}: ParamsTypes) {
+export default function ProducerPage() {
+    const locale = useTranslations()
+    const params = useParams()
+    const { producers, loading } = useProducers()
     
-    const locale = await getTranslations()
-    const albums = await getAlbums()
-    const producer = (await getProducers())
-        .find(item => item.id === params.slug) as ProducerTypes
-	
-	return (
-		<>
-            {/* Hero [[ Find at scss/framework/hero.scss ]] */}
-			<div 
-                className='hero' 
-                style={{backgroundImage: 'url(/images/banner/Producers.jpg)'}}
-            />
+    console.log('Producer page:', {
+        slug: params.slug,
+        producers: producers?.map(p => ({
+            name: p.name,
+            displayName: p.displayName,
+            tracksCount: p.tracks?.length,
+            soundKitsCount: p.soundKits?.length
+        }))
+    })
+    
+    const producer = producers?.find(p => p.name === (params.slug as string)?.toLowerCase()) as ProducerWithDetails | undefined
+    
+    console.log('Found producer:', producer)
+
+    if (loading) {
+        return <div className="container py-5 text-center"><LoadingSpinner /></div>
+    }
+
+    if (!producer) {
+        return <div className="container py-5 text-center">Producer not found</div>
+    }
+
+    return (
+        <div className="min-h-screen" style={{ marginTop: '100px' }}>
+            <ProfileInfo producer={producer} />
 
             {/* Under hero [[ Find at scss/framework/hero.scss ]] */}
-            <div className='under-hero container'>
-                <CoverInfo data={producer} />
-
+            <div className='container' style={{ marginTop: '50px' }}>
                 {/* Section [[ Find at scss/framework/section.scss ]] */}
                 <div className='section'>
                     <div className='section__head'>
-                        <h3 
-                            className='mb-0'
-                            dangerouslySetInnerHTML={{__html: title(locale, 'top_tracks_title')}}
-                        />
+                        <h3 className='mb-0'>{locale('tracks')}</h3>
                     </div>
 
-                    {/* List [[ Find at scss/components/list.scss ]] */}
-                    <div className='list'>
-                        <div className='row'>
-                            {producer.tracks.map((item: any, index: number) => (
-                                <div key={index} className='col-xl-6'>
-                                    <TrackList 
-                                        data={item}
-                                        duration
-                                        dropdown
-                                        playlist
-                                        queue
-                                        play
-                                        link
-                                    />
-                                </div>
-                            ))}
+                    {producer.tracks && producer.tracks.length > 0 ? (
+                        <div className='list'>
+                            <div className='row'>
+                                {producer.tracks.map((item, index) => (
+                                    <div key={index} className='col-xl-6'>
+                                        <TrackList
+                                            data={{
+                                                ...item,
+                                                href: `/tracks/${item.id}`,
+                                                title: item.title,
+                                                src: item.src,
+                                                cover: item.cover,
+                                                type: 'track'
+                                            }}
+                                            duration
+                                            dropdown
+                                            playlist
+                                            queue
+                                            play
+                                            link
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <p className="my-4">{locale('no_samples_uploaded')}</p>
+                    )}
                 </div>
 
-                <Section 
-                    title={title(locale, 'top_albums_title')}
-                    data={albums}
-                    card='album'
-                    slideView={5}
-                    navigation
-                    autoplay
-                />
-
-                <Comments id={producer.id} />
+                <div className='section'>
+                    <div className='section__head'>
+                        <h3 className='mb-0'>{locale('sidebar.sound_kits')}</h3>
+                    </div>
+                    {producer.soundKits && producer.soundKits.length > 0 ? (
+                        <Section
+                            title=""
+                            data={producer.soundKits.map(kit => ({
+                                ...kit,
+                                href: `/sound_kits/${kit.id}`,
+                                title: kit.title || kit.name,
+                                cover: kit.cover || '/images/cover/default.jpg',
+                                type: 'sound_kit'
+                            }))}
+                            card="sound_kit"
+                            slideView={5}
+                            navigation
+                            autoplay
+                        />
+                    ) : (
+                        <p className="my-4">{locale('no_sound_kits_uploaded')}</p>
+                    )}
+                </div>
             </div>
-		</>
-	)
+        </div>
+    )
 }

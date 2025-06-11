@@ -83,65 +83,58 @@ const TrackList: React.FC<TrackListProps> = ({
                 )}
             </div>
 
-            <div className='list__content'>
+            <div className='list__content text-white'>
                 {number && (
                     <span className='list__number me-3'>{number}.</span>
                 )}
-                <Component
-                    className='list__title text-truncate'
-                    {...attr}
-                >
+                <span className='list__title text-truncate text-white'>
                     {data.title ? data.title : data.name}
-                </Component>
+                </span>
                 {data.Producers && (
-                    <div className='list__subtitle text-truncate'>
+                    <div className='list__subtitle text-truncate text-white'>
                         {data.Producers.map((producer: InfoType, index: number) => (
-                            <span key={index}>
+                            <Link
+                                key={index}
+                                href={`/producers/${encodeURIComponent(producer.name.toLowerCase())}`}
+                            >
                                 {producer.name}
                                 {data.Producers.length - 1 === index ? '' : ', '}
-                            </span>
+                            </Link>
                         ))}
                     </div>
                 )}
             </div>
 
-            <ul className='list__option'>
+            <ul className='list__option text-white'>
                 {(duration && data.duration) && (
-                    <li>{data.duration}</li>
+                    <li className="me-3">{data.duration}</li>
                 )}
                 {download && (
                     <li>
-                        <button
-                            className="btn btn-icon hover-trigger"
-                            aria-label="Download for 3 credits"
-                        >
-                            <RiDownloadLine size={18} />
-                            <div className="hover-tooltip">Download for 3 credits</div>
-                        </button>
-                    </li>
-                )}
-                {like && (
-                    <li>
-                        <button className="btn btn-icon">
-                            <RiHeartLine size={18} />
-                        </button>
-                    </li>
-                )}
-                {playlist && (
-                    <li>
-                        <button className="btn btn-icon">
-                            <RiPlayListLine size={18} />
-                        </button>
+                        {data.purchased ? (
+                            <button className="btn btn-outline-light btn-sm">
+                                <RiDownloadLine size={18} className="me-1" />
+                                Download
+                            </button>
+                        ) : (
+                            <button className="btn btn-outline-light btn-sm">
+                                Purchase for 3 Credits
+                            </button>
+                        )}
                     </li>
                 )}
                 {dropdown && (
                     <li>
-                        <button className="btn btn-icon dropdown-toggle" data-bs-toggle="dropdown">
+                        <button className="btn btn-icon text-white" data-bs-toggle="dropdown">
                             <RiMoreFill size={18} />
                         </button>
-                        <ul className="dropdown-menu dropdown-menu-sm">
-                            <li><button className="dropdown-item">Add to playlist</button></li>
-                            <li><button className="dropdown-item">Share</button></li>
+                        <ul className="dropdown-menu dropdown-menu-sm bg-dark">
+                            <li>
+                                <button className="dropdown-item text-white menu-item-hover">Share</button>
+                            </li>
+                            <li>
+                                <Link href="/report" className="dropdown-item text-white menu-item-hover">Report</Link>
+                            </li>
                         </ul>
                     </li>
                 )}

@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * @file helper.ts
  * @description helper functions for the application, now using Redux for state management

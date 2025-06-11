@@ -11,19 +11,35 @@ import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
-import { RiLogoutCircleLine } from '@remixicon/react'
+import {
+    RiLogoutCircleLine,
+    RiUser3Line,
+    RiPieChartLine
+} from '@remixicon/react'
 
 // Contexts
 import { useAuthentication } from '@/core/contexts/authentication'
 import { useTheme } from '@/core/contexts/theme'
 
 // Utilities
-import { OPTIONS } from '@/core/constants/constant'
 import { capitalize } from '@/core/utils'
 import type { CurrentUserTypes } from '../../types'
 
 const ProfileDropdown: React.FC = () => {
     const { currentUser, logout } = useAuthentication()
+    
+    // Debug logging
+    console.log('currentUser in ProfileDropdown:', {
+        currentUser,
+        isProducer: currentUser?.isProducer,
+        username: currentUser?.username,
+        type: typeof currentUser?.isProducer
+    })
+    console.log('ProfileDropdown currentUser:', {
+        user: currentUser,
+        username: currentUser?.username,
+        isProducer: currentUser?.isProducer
+    })
     const { replaceClassName } = useTheme()
     const locale = useTranslations()
     const user = useTranslations('user')
@@ -76,28 +92,30 @@ const ProfileDropdown: React.FC = () => {
             )}
 
             <ul className={replaceClassName(`dropdown-menu dropdown-menu-end ${isOpen ? 'show' : ''}`)} aria-labelledby="user_menu">
-    {shouldShowProducerLinks && (
-        <>
-            <li>
-                <Link href="/music/profile" className={replaceClassName("dropdown-item")}>
-                    {user('profile')}
-                </Link>
-            </li>
-            <li>
-                <Link href="/music/analytics" className={replaceClassName("dropdown-item")}>
-                    {sidebarLocale('analytics')}
-                </Link>
-            </li>
-            <li><hr className={replaceClassName("dropdown-divider")} /></li>
-        </>
-    )}
+                {shouldShowProducerLinks && (
+                    <>
+                        <li>
+                            <Link href={`/producers/${currentUser?.username?.toLowerCase()}`} className={replaceClassName("dropdown-item d-flex align-items-center")}>
+                                <RiUser3Line size={20} />
+                                <span className="ms-2">{user('profile')}</span>
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/analytics" className={replaceClassName("dropdown-item")}>
+                                <RiPieChartLine className={replaceClassName('me-2')} />
+                                {user('analytics')}
+                            </Link>
+                        </li>
+                        <li><hr className={replaceClassName("dropdown-divider")} /></li>
+                    </>
+                )}
     <li>
-        <Link href="/music/settings" className={replaceClassName("dropdown-item")}>
+        <Link href="/settings" className={replaceClassName("dropdown-item")}>
             {user('settings')}
         </Link>
     </li>
     <li>
-        <Link href="/music/plan" className={replaceClassName("dropdown-item")}>
+        <Link href="/plan" className={replaceClassName("dropdown-item")}>
             {user('plan')}
         </Link>
     </li>

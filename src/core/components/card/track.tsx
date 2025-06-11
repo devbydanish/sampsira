@@ -126,6 +126,12 @@ const TrackCard: React.FC<TrackProps> = (
                         width={320}
                         height={320}
                         alt={trackData.title}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: '0.5rem'
+                        }}
                     />
                 </Component>
 
@@ -136,21 +142,15 @@ const TrackCard: React.FC<TrackProps> = (
 
             {/* Cover foot */}
             <div className='cover__foot'>
-                {data.href ? (
-                    <Link href={data.href} className='cover__title text-truncate'>
-                        {trackData.title}
-                    </Link>
-                ) : (
-                    <span className='cover__title text-truncate'>
-                        {trackData.title}
-                    </span>
-                )}
+                <span className='cover__title text-truncate'>
+                    {trackData.title}
+                </span>
                 {trackData.Producers && trackData.Producers.length > 0 && (
                     <div className='cover__subtitle text-truncate'>
                         {trackData.Producers.map((producer: InfoType, index: number) => (
                             <Link
                                 key={index}
-                                href={'/music/producers/' + producer.id}
+                                href={'/producers/' + encodeURIComponent(producer.name.toLowerCase())}
                             >
                                 {producer.name}
                                 {index < trackData.Producers.length - 1 ? ', ' : ''}

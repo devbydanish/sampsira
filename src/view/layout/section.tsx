@@ -81,7 +81,6 @@ const Section: React.FC<Props> = (
                         )}
                         <h3 className='mb-0' dangerouslySetInnerHTML={{__html: title}} />
                     </div>
-                    <Link href={href} className='btn btn-link'>{locale('view_all')}</Link>
                 </>
             ) : (
                 <>

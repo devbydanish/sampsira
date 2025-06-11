@@ -34,11 +34,17 @@ const AvatarCard: React.FC<Props> = ({data}) => {
         <div className='avatar avatar--xxl scale-animation d-block text-center'>
             <div className='avatar__image mx-auto'>
                 <Link href={data.href}>
-                    <Image 
+                    <Image
                         src={data.cover}
                         width={128}
                         height={128}
                         alt={data.name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: '50%'
+                        }}
                     />
                 </Link>
             </div>

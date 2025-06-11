@@ -214,7 +214,7 @@ const ProfileForm: React.FC = () => {
     const submitForm = async (data: ProfileTypes) => {
         try {
             if (currentUser) {
-                let imageUrl = data.image;
+                let imageUrl;
 
                 // If there's a new image uploaded, process it first
                 if (uploadedImage) {
@@ -649,7 +649,6 @@ const ProfileForm: React.FC = () => {
                                                         className='d-none'
                                                         accept="image/*"
                                                         onChange={handleImageChange}
-                                                        disabled={!isEditing}
                                                     />
                                                     <label
                                                         htmlFor='profile'

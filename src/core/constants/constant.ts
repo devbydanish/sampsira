@@ -17,7 +17,8 @@ import {
     RiMailLine,
     RiTwitterXLine,
     RiUploadLine,
-    RiBarChartBoxLine
+    RiBarChartBoxLine,
+    RiFileListLine
 } from '@remixicon/react'
 
 // Utilities
@@ -40,6 +41,11 @@ export const NAVBAR: NavbarTypes[] = [
         name: 'samples',
         href: '/samples',
         icon: RiVoiceprintFill,
+    },
+    {
+        name: 'license',
+        href: '/license',
+        icon: RiFileListLine,
     },
     {
         name: 'about_us',
@@ -89,7 +95,7 @@ export const FOOTER_LINK: NavLinkTypes[] = [
     },
     {
         name: 'Terms of Use',
-        href: '/terms-of-use',
+        href: '/terms',
     },
     {
         name: 'License Agreements',
@@ -114,11 +120,6 @@ export const OPTIONS: NavLinkTypes[] = [
         icon: RiPieChartLine
     },
     {
-        name: 'Credits',
-        href: '/plan',
-        icon: RiMoneyDollarCircleLine
-    },
-    {
         name: 'Settings',
         href: '/settings',
         icon: RiSettingsLine
@@ -127,11 +128,6 @@ export const OPTIONS: NavLinkTypes[] = [
 
 // User Dropdown Options
 export const OPTIONS_USER: NavLinkTypes[] = [
-    {
-        name: 'Credits',
-        href: '/plan',
-        icon: RiMoneyDollarCircleLine
-    },
     {
         name: 'Settings',
         href: '/settings',
@@ -163,7 +159,7 @@ export const SOCIAL: NavLinkTypes[] = [
     {
         name: 'Instagram',
         icon: RiInstagramLine,
-        href: '#'
+        href: 'https://www.instagram.com/eccentricsounds_'
     },
     {
         name: 'Facebook',

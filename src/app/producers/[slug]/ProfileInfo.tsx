@@ -3,59 +3,72 @@
 import React from 'react';
 import Image from 'next/image';
 import { RiInstagramLine, RiYoutubeLine, RiTiktokLine, RiFacebookLine } from '@remixicon/react';
-import { useAuthentication } from '@/core/contexts/authentication';
+import { ProducerTypes } from '@/core/types';
 
-const ProfileInfo = () => {
-    const { currentUser } = useAuthentication();
+interface ProducerWithDetails extends ProducerTypes {
+    bio?: string;
+    socialAccounts?: {
+        instagram?: { connected: boolean; username: string };
+        facebook?: { connected: boolean; username: string };
+        youtube?: { connected: boolean; username: string };
+        tiktok?: { connected: boolean; username: string };
+    };
+}
 
-    const displayName = currentUser?.displayName || (currentUser?.isProducer
-        ? currentUser.producerName || `${currentUser?.firstName} ${currentUser?.lastName}`
-        : `${currentUser?.firstName} ${currentUser?.lastName}`);
+interface ProfileInfoProps {
+    producer: ProducerWithDetails;
+}
 
+const ProfileInfo: React.FC<ProfileInfoProps> = ({ producer }) => {
     return (
         <div className='profile-info container text-white p-4'>
             <div className='d-flex align-items-center'>
                 <div className='avatar avatar--xl me-4'>
                     <div className='avatar__image'>
                         <Image
-                            src={currentUser?.cover || "/images/users/default.png"}
+                            src={producer.cover || "/images/users/default.png"}
                             alt="Profile"
                             width={160}
                             height={160}
-                            className='rounded-circle'
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: '50%'
+                            }}
                         />
                     </div>
                 </div>
                 <div className='profile-details'>
-                    <h2 className='mb-2'>{displayName}</h2>
-                    <p className='mb-3' style={{maxWidth: '600px'}}>{currentUser?.bio}</p>
+                    <h2 className='mb-2'>{producer.displayName}</h2>
+                    <p className='mb-3' style={{maxWidth: '600px'}}>{producer.bio}</p>
                     <div className='social-links d-flex gap-3'>
-                        {currentUser?.socialAccounts?.instagram?.connected && (
-                            <a href={`https://instagram.com/${currentUser.socialAccounts.instagram.username}`}
+                        {producer.socialAccounts?.instagram?.connected && (
+                            <a href={`https://instagram.com/${producer.socialAccounts.instagram.username}`}
                                 className='text-white'
                                 target='_blank'
                                 rel='noopener noreferrer'>
                                 <RiInstagramLine className='fs-3' />
                             </a>
                         )}
-                        {currentUser?.socialAccounts?.facebook?.connected && (
-                            <a href={`https://facebook.com/${currentUser.socialAccounts.facebook.username}`}
+                        {producer.socialAccounts?.facebook?.connected && (
+                            <a href={`https://facebook.com/${producer.socialAccounts.facebook.username}`}
                                 className='text-white'
                                 target='_blank'
                                 rel='noopener noreferrer'>
                                 <RiFacebookLine className='fs-3' />
                             </a>
                         )}
-                        {currentUser?.socialAccounts?.youtube?.connected && (
-                            <a href={`https://youtube.com/@${currentUser.socialAccounts.youtube.username}`}
+                        {producer.socialAccounts?.youtube?.connected && (
+                            <a href={`https://youtube.com/@${producer.socialAccounts.youtube.username}`}
                                 className='text-white'
                                 target='_blank'
                                 rel='noopener noreferrer'>
                                 <RiYoutubeLine className='fs-3' />
                             </a>
                         )}
-                        {currentUser?.socialAccounts?.tiktok?.connected && (
-                            <a href={`https://tiktok.com/@${currentUser.socialAccounts.tiktok.username}`}
+                        {producer.socialAccounts?.tiktok?.connected && (
+                            <a href={`https://tiktok.com/@${producer.socialAccounts.tiktok.username}`}
                                 className='text-white'
                                 target='_blank'
                                 rel='noopener noreferrer'>

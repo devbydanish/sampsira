@@ -10,7 +10,7 @@
     .avatar__image {
         @include size($avatar-size-base);
         position: relative;
-        background-color: $avatar-image-bg;
+        background-color: $transparent;
         border-radius: 50%;
         overflow: hidden;
         display: block;

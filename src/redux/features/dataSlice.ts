@@ -248,7 +248,7 @@ export const fetchProducers = createAsyncThunk(
             //     return rejectWithValue('No authentication token found');
             // }
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?populate[img][fields][0]=url`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?populate[img][fields][0]=url&populate=tracks&populate=soundKits&populate=socialAccounts`, {
                 // headers: {
                 //     'Authorization': `Bearer ${token}`
                 // }
@@ -264,11 +264,16 @@ export const fetchProducers = createAsyncThunk(
                 ?.filter((user: any) => user.isProducer)
                 ?.map((user: any) => ({
                     id: user.id,
-                    name: user.username,
+                    name: user.username.toLowerCase(),
+                    displayName: user.displayName || user.username,
                     type: 'producer',
-                    cover: user.img? process.env.NEXT_PUBLIC_STRAPI_URL + user.img.url : '/images/cover/large/1.jpg',
-                    href: `/users/${user.username}`,
-                    isProducer: true
+                    cover: user.img ? process.env.NEXT_PUBLIC_STRAPI_URL + user.img.url : '/images/cover/large/1.jpg',
+                    href: `/producers/${user.username.toLowerCase()}`,
+                    isProducer: true,
+                    tracks: user.tracks || [],
+                    soundKits: user.soundKits || [],
+                    bio: user.bio,
+                    socialAccounts: user.socialAccounts
                 }));
             console.log('Producers data:', producers);
             // return random 8 producers
@@ -286,30 +291,8 @@ export const fetchGenres = createAsyncThunk(
     'data/fetchGenres',
     async (_, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.user.token;
-            
-            if (!token) {
-                return rejectWithValue('No authentication token found');
-            }
-            
-            const response = await fetch(GENRES, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return rejectWithValue(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-            }
-            
-            const data = await response.json();
-            
-            return data.data.map((item: any) => genreToLocal({
-                ...item.attributes,
-                id: item.id
-            }));
+            const mockGenres = (await import('../../core/mock/genres.json')).default;
+            return mockGenres.data;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Error fetching genres');
         }
@@ -320,30 +303,8 @@ export const fetchMoods = createAsyncThunk(
     'data/fetchMoods',
     async (_, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.user.token;
-            
-            if (!token) {
-                return rejectWithValue('No authentication token found');
-            }
-            
-            const response = await fetch(MOODS, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return rejectWithValue(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-            }
-            
-            const data = await response.json();
-            
-            return data.data.map((item: any) => moodToLocal({
-                ...item.attributes,
-                id: item.id
-            }));
+            const mockMoods = (await import('../../core/mock/moods.json')).default;
+            return mockMoods.data;
         } catch (error: any) {
             return rejectWithValue(error.message || 'Error fetching moods');
         }

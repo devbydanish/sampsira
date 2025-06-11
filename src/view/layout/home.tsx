@@ -100,8 +100,8 @@ const Home: React.FC<Props> = ({
 			list: [...tracks].slice(0, 5)
 		},
 		{
-			id: 'club',
-			name: locale('club'),
+			id: 'jersey_club',
+			name: locale('jersey_club'),
 			list: [...tracks].slice(0, 5)
 		},
 		{
@@ -136,6 +136,18 @@ const Home: React.FC<Props> = ({
                 card='track'
                 slideView={5}
                 navigation
+                autoplay
+            />
+
+
+            <Section 
+                title={title(locale, 'feature_Producers_title')}
+                subtitle={locale('feature_Producers_subtitle')}
+                href='/music/producers'
+                data={Producers}
+                card='avatar'
+                slideView={6}
+                pagination
                 autoplay
             />
 
@@ -186,15 +198,13 @@ const Home: React.FC<Props> = ({
                                 {/* List [[ Find at scss/components/list.scss ]] */}
                                 <div className='list'>
                                     {tab.list.map((item: any, listIndex: number) => (
-                                        <TrackList 
+                                        <TrackList
                                             key={listIndex}
                                             data={item}
                                             play
                                             duration
+                                            download
                                             dropdown
-                                            like
-                                            playlist
-                                            queue
                                             link
                                         />
                                     ))}
@@ -205,19 +215,8 @@ const Home: React.FC<Props> = ({
                 </div>
             </div>
 
-            <Section 
-                title={title(locale, 'feature_Producers_title')}
-                subtitle={locale('feature_Producers_subtitle')}
-                href='/music/producers'
-                data={Producers}
-                card='avatar'
-                slideView={6}
-                pagination
-                autoplay
-            />
-
             <section className='section'>
-                <div className='section__head'>
+                {/* <div className='section__head'>
                     <div className='flex-grow-1'>
                         <span className='section__subtitle'>{locale('top_sound_kits_subtitle')}</span>
                         <h3
@@ -225,8 +224,7 @@ const Home: React.FC<Props> = ({
                             dangerouslySetInnerHTML={{__html: title(locale, 'top_sound_kits_title')}}
                         />
                     </div>
-                    <Link href='/music/sound-kits' className='btn btn-link'>{locale('view_all')}</Link>
-                </div>
+                </div> */}
                 {/* List [[ Find at scss/components/list.scss ]] */}
                 <div className='list list--lg list--order'>
                     <div className='row'>
@@ -264,7 +262,7 @@ const Home: React.FC<Props> = ({
                 </div>
             </section>
             
-            <Blog />
+            {/* <Blog /> */}
 
         </div>
     )

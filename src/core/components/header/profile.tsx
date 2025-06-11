@@ -27,6 +27,11 @@ import ProfileDropdown from './ProfileDropdown';
 const Profile: React.FC = () => {
 
     const {currentUser, logout} = useAuthentication()
+    console.log('Profile Component:', {
+        currentUser,
+        isProducer: currentUser?.isProducer,
+        username: currentUser?.username
+    })
     const {replaceClassName} = useTheme()
     const locale = useTranslations()
     const user = useTranslations('user')
@@ -74,8 +79,10 @@ const Profile: React.FC = () => {
                         </div>
                         <div className='dropdown-divider'></div>
                         {(currentUser.isProducer ? OPTIONS : OPTIONS_USER).map((option, index) => (
-                            <Link 
-                                href={option.href}
+                            <Link
+                                href={option.name === 'Profile' && currentUser.isProducer
+                                    ? `/producers/${currentUser.username?.toLowerCase()}`
+                                    : option.href}
                                 key={index}
                                 className='dropdown-item d-flex align-items-center'
                             >

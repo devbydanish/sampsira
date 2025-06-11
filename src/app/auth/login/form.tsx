@@ -40,7 +40,7 @@ const LoginForm: React.FC = () => {
     const { signInWithGoogle } = useAuthentication()
     const auth = useTranslations('auth')
     const dispatch = useDispatch<ThunkDispatch<RootState, any, any>>()
-    const { isAuthenticated, subscriptionActive, error } = useSelector((state: RootState) => state.user)
+    const { isAuthenticated, subscriptionActive, error, status } = useSelector((state: RootState) => state.user)
     
     const {
         register,
@@ -61,26 +61,31 @@ const LoginForm: React.FC = () => {
     useEffect(() => {
         if (error) {
             if (error.includes('locked')) {
-                toast.error('Tu cuenta está bloqueada. Inténtelo de nuevo más tarde o presione ¿olvidó su contraseña?.')
+                toast.error('You account is blocked. Try again later or press forgot your password?')
             } else if (error.includes('Invalid')) {
-                toast.error("El usuario o la contraseña esta incorrecto. Intente de nuevo.")
+                toast.error("The username or password is incorrect. Try again.")
             } else {
                 toast.error(error)
             }
         }
-        dispatch(resetError() as any)
-    }, [dispatch, error])
+    }, [error])
     
     const submitForm = async (data: LoginTypes) => {
-        try {
-            dispatch(loginUser({ email: data.email, password: data.password }) as any)
-        } catch (error) {
-            console.error('Sign-in error:', error)
-        }
+        dispatch(loginUser({ email: data.email, password: data.password }) as any)
     }
 
     return (
         <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
+            {error && (
+                <div className="alert alert-danger mb-4 p-3 rounded" role="alert">
+                    {error.includes('locked')
+                        ? 'You account is blocked. Try again later or press forgot your password?'
+                        : error.includes('Invalid')
+                        ? "The username or password is incorrect. Try again."
+                        : error
+                    }
+                </div>
+            )}
             <div className='mb-5'>
                 <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                     <span className='btn__wrap'>
@@ -140,10 +145,10 @@ const LoginForm: React.FC = () => {
             <div className='mb-5'>
                 <button 
                     type='submit' 
-                    disabled={isSubmitting}
+                    disabled={status === 'loading'}
                     className={classNames(
                         'btn btn-primary w-100 btn-loading',
-                        isSubmitting && 'active'
+                        status === 'loading' && 'active'
                     )}
                 >
                     {auth('login')}

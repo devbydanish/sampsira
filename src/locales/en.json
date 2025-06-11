@@ -21,7 +21,7 @@
     "trap": "Trap",
     "drill": "Drill",
     "techno": "Techno",
-    "club": "Club",
+    "jersey_club": "Jersey Club",
     "drumandbass": "Drum & Bass",
     "dancehall": "Dancehall",
     "afrobeat": "Afrobeat",
@@ -124,6 +124,14 @@
         "link_account": "Link Account",
         "unlink_account": "Unlink Account"
     },
+    "pricing": {
+        "month": "month",
+        "subscribe": "Subscribe Now",
+        "buyCredits": "Buy Credits",
+        "plan_subtitle": "Select your preferred plan",
+        "unlimited_access": "Subscribe for unlimited access",
+        "pay_as_you_go": "Pay as you go"
+    },
     "header": {
         "discover": "Discover",
         "pricing": "Pricing",
@@ -139,6 +147,7 @@
         "home": "Home",
         "about_us": "About Us",
         "contact_us": "Contact Us",
+        "license": "License",
         "trending": "Trending",
         "genres": "Genres",
         "music": "Music",

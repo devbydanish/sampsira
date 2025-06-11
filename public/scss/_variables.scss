@@ -10,6 +10,7 @@
 // Bootstrap base gray colors
 //
 // scss-docs-start gray-color-variables
+$transparent:        transparent;
 $white:             #ffffff;
 $gray-100:          #F9FAFB;
 $gray-200:          #EFF2F5;
@@ -321,7 +322,7 @@ $cover-head-color:                  $white;
 $cover-foot-margin-top:             0.75rem; // 12px
 $cover-label-item-margin-left:      0.5rem; // 5px
 
-$cover-image-bg:                    $gray-200;
+$cover-image-bg:                    $transparent;
 $cover-image-content-bg:            linear-gradient(0deg, rgba($black, 1) 0%, rgba($black, 0) 100%);
 $cover-image-content-color:         $white;
 $cover-image-content-padding:       1.5rem 1rem 1rem;

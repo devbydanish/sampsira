@@ -60,9 +60,8 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                                             type: 'track'
                                         }}
                                         duration
+                                        download
                                         dropdown
-                                        playlist
-                                        queue
                                         play
                                         link
                                     />
@@ -74,33 +73,6 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                             </div>
                         )}
                     </div>
-                </div>
-            </section>
-
-            {/* Genre Section */}
-            <section className='section mt-5'>
-                <div className='section__head'>
-                    <h3 className='mb-0' dangerouslySetInnerHTML={{__html: title(locale, 'samples_genres_title')}} />
-                </div>
-                <div className='row g-4'>
-                    {genres.length > 0 ? (
-                        genres.map((genre, index) => (
-                            <div key={index} className='col-xl-2 col-md-3 col-sm-4 col-6'>
-                                <a href={`/genre/${genre.id}`} className='cover cover--round'>
-                                    <div className='cover__image'>
-                                        <img src={genre.cover} alt={genre.title} />
-                                    </div>
-                                    <div className='cover__foot'>
-                                        <span className='cover__title text-truncate'>{genre.title}</span>
-                                    </div>
-                                </a>
-                            </div>
-                        ))
-                    ) : (
-                        <div className='col-12'>
-                            <p className='text'>No genres available</p>
-                        </div>
-                    )}
                 </div>
             </section>
 
@@ -133,6 +105,44 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                 </div>
             </section>
 
+            {/* Genre Section */}
+            <section className='section mt-5'>
+                <div className='section__head'>
+                    <h3 className='mb-0' dangerouslySetInnerHTML={{__html: title(locale, 'samples_genres_title')}} />
+                </div>
+                <div className='row g-4'>
+                    {genres.length > 0 ? (
+                        genres.map((genre, index) => (
+                            <div key={index} className='col-xl-2 col-md-3 col-sm-4 col-6'>
+                                <a href={`/genre/${genre.id}`} className='cover cover--round scale-animation'>
+                                    <div className='cover__image'>
+                                        <div className='ratio ratio-1x1'>
+                                            <img
+                                                src={genre.cover}
+                                                alt={genre.title}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '0.5rem'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className='cover__foot'>
+                                        <span className='cover__title text-truncate'>{genre.title}</span>
+                                    </div>
+                                </a>
+                            </div>
+                        ))
+                    ) : (
+                        <div className='col-12'>
+                            <p className='text'>No genres available</p>
+                        </div>
+                    )}
+                </div>
+            </section>
+
             {/* Moods Section */}
             <section className='section mt-5'>
                 <div className='section__head'>
@@ -142,9 +152,20 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                     {moods.length > 0 ? (
                         moods.map((mood, index) => (
                             <div key={index} className='col-xl-2 col-md-3 col-sm-4 col-6'>
-                                <a href={`/mood/${mood.id}`} className='cover cover--round'>
+                                <a href={`/mood/${mood.id}`} className='cover cover--round scale-animation'>
                                     <div className='cover__image'>
-                                        <img src={mood.cover} alt={mood.title} />
+                                        <div className='ratio ratio-1x1'>
+                                            <img
+                                                src={mood.cover}
+                                                alt={mood.title}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '0.5rem'
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                     <div className='cover__foot'>
                                         <span className='cover__title text-truncate'>{mood.title}</span>
@@ -159,6 +180,7 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                     )}
                 </div>
             </section>
+
         </div>
     )
 }
