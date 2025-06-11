@@ -53,6 +53,17 @@ const ProfileForm: React.FC = () => {
     })
     const [uploadedImage, setUploadedImage] = useState<File | null>(null);
     const [previewImage, setPreviewImage] = useState<string>(currentUser?.img ? process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url : '/images/users/default.png');
+    const [formStatus, setFormStatus] = useState<{success?: boolean; message?: string} | null>(null);
+
+    // State for subscription information
+    const [subscriptionInfo, setSubscriptionInfo] = useState<{
+        status: string;
+        plan: string;
+        startDate: string;
+        nextBillingDate: string;
+        amount: number;
+    } | null>(null);
+    const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
 
     // Initialize social accounts from currentUser if available
     useEffect(() => {
@@ -86,17 +97,26 @@ const ProfileForm: React.FC = () => {
             });
     
             if (response.ok) {
-                alert("A confirmation email has been sent. Check your inbox to proceed.");
+                setFormStatus({
+                    success: true,
+                    message: "A confirmation email has been sent. Check your inbox to proceed."
+                });
                 setShowDeleteModal(false);
                 setDeleteConfirmation('');
             } else {
                 const errorData = await response.json();
                 console.error('Error requesting deletion:', errorData.message || 'Unknown error');
-                alert('Failed to send confirmation email. Please try again.');
+                setFormStatus({
+                    success: false,
+                    message: 'Failed to send confirmation email. Please try again.'
+                });
             }
         } catch (error) {
             console.error('Network error:', error);
-            alert('Network error. Please check your connection and try again.');
+            setFormStatus({
+                success: false,
+                message: 'Network error. Please check your connection and try again.'
+            });
         } finally {
             setIsDeleting(false);
         }
@@ -143,6 +163,7 @@ const ProfileForm: React.FC = () => {
             bio: currentUser?.bio || '',
         });
         setIsEditing(false);
+        setFormStatus(null);
     }
 
     // Update form values when editing mode changes
@@ -168,7 +189,8 @@ const ProfileForm: React.FC = () => {
     ]
 
     const handleTabClick = (tabName: ActiveTab) => {
-        setActiveTab(tabName)
+        setActiveTab(tabName);
+        setFormStatus(null);
     }
 
     const closeDeleteModal = () => {
@@ -213,6 +235,8 @@ const ProfileForm: React.FC = () => {
 
     const submitForm = async (data: ProfileTypes) => {
         try {
+            setFormStatus(null);
+            
             if (currentUser) {
                 let imageUrl;
 
@@ -255,27 +279,39 @@ const ProfileForm: React.FC = () => {
                 setIsEditing(false);
                 setUploadedImage(null);
                 reset({
-                    image: responseData.cover || '/images/users/default.png',
                     firstName: responseData.firstName || '',
                     lastName: responseData.lastName || '',
                     displayName: responseData.displayName || '',
                     username: responseData.username || '',
                     bio: responseData.bio || '',
                 });
-                alert('Profile updated successfully!');
+                
+                setFormStatus({
+                    success: true,
+                    message: 'Profile updated successfully!'
+                });
             }
         } catch (error) {
             console.error('Error updating profile:', error);
+            
             if (error instanceof Error) {
-                alert(error.message || 'Failed to update profile. Please try again.');
+                setFormStatus({
+                    success: false,
+                    message: error.message || 'Failed to update profile. Please try again.'
+                });
             } else {
-                alert('Failed to update profile. Please try again.');
+                setFormStatus({
+                    success: false,
+                    message: 'Failed to update profile. Please try again.'
+                });
             }
         }
     };
 
     const handleSocialConnect = async (platform: 'instagram' | 'facebook' | 'youtube' | 'tiktok', username: string, profileUrl: string) => {
         try {
+            setFormStatus(null);
+            
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/connect-social`,
                 {
@@ -324,10 +360,17 @@ const ProfileForm: React.FC = () => {
                     localStorage.setItem("user", JSON.stringify(updatedUser));
                 }
                 
-                alert(`${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`);
+                setFormStatus({
+                    success: true,
+                    message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`
+                });
             }
         } catch (error) {
             console.error(`Error connecting ${platform}:`, error);
+            setFormStatus({
+                success: false,
+                message: `Failed to connect ${platform}. Please try again.`
+            });
         }
     };
 
@@ -424,10 +467,17 @@ const ProfileForm: React.FC = () => {
                         localStorage.setItem("user", JSON.stringify(updatedUser));
                     }
                     
-                    alert(`${platform.charAt(0).toUpperCase() + platform.slice(1)} disconnected successfully!`);
+                    setFormStatus({
+                        success: true,
+                        message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} disconnected successfully!`
+                    });
                 }
             } catch (error) {
                 console.error(`Error disconnecting ${platform}:`, error);
+                setFormStatus({
+                    success: false,
+                    message: `Failed to disconnect ${platform}. Please try again.`
+                });
             }
         }
     };
@@ -452,15 +502,24 @@ const ProfileForm: React.FC = () => {
             });
     
             if (response.ok) {
-                alert('A confirmation email has been sent to your new email address. Please check your inbox.');
+                setFormStatus({
+                    success: true,
+                    message: 'A confirmation email has been sent to your new email address. Please check your inbox.'
+                });
             } else {
                 const errorData = await response.json();
                 console.error('Error sending confirmation email:', errorData.message || 'Unknown error');
-                alert('Failed to send confirmation email. Please try again.');
+                setFormStatus({
+                    success: false,
+                    message: 'Failed to send confirmation email. Please try again.'
+                });
             }
         } catch (error) {
             console.error('Network error:', error);
-            alert('Network error. Please check your connection and try again.');
+            setFormStatus({
+                success: false,
+                message: 'Network error. Please check your connection and try again.'
+            });
         }
     };
 
@@ -488,7 +547,10 @@ const ProfileForm: React.FC = () => {
         try {
             if (!currentUser) {
                 console.error('No user logged in');
-                alert('You must be logged in to change your password.');
+                setFormStatus({
+                    success: false,
+                    message: 'You must be logged in to change your password.'
+                });
                 return;
             }
     
@@ -523,7 +585,10 @@ const ProfileForm: React.FC = () => {
             });
 
             if (!currentUser?.email || !currentUser?.jwt) {
-                alert('User credentials are missing. Please try logging in again.');
+                setFormStatus({
+                    success: false,
+                    message: 'User credentials are missing. Please try logging in again.'
+                });
                 return;
             }
 
@@ -531,7 +596,10 @@ const ProfileForm: React.FC = () => {
                 const responseData = await response.json();
                 if (response.ok) {
                     setPasswordError('');
-                    alert('Password changed successfully!');
+                    setFormStatus({
+                        success: true,
+                        message: 'Password changed successfully!'
+                    });
                     form.reset();
                 } else {
                     console.error('Error changing password:', responseData);
@@ -557,7 +625,11 @@ const ProfileForm: React.FC = () => {
             }
         } catch (error) {
             console.error('Network error:', error);
-            alert('Network error. Please check your connection and try again.');
+            setFormStatus({
+                success: false,
+                message: 'Network error. Please check your connection and try again.'
+            });
+            setIsSubmitting(false);
         }
     };
 
@@ -588,6 +660,60 @@ const ProfileForm: React.FC = () => {
         
         fetchUploads();
     }, [currentUser]);
+
+    // Fetch subscription information
+    const fetchSubscriptionInfo = async () => {
+        if (!currentUser?.id) return;
+        
+        setIsLoadingSubscription(true);
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/subscriptions/user/${currentUser.id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${currentUser.jwt}`,
+                    },
+                }
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                setSubscriptionInfo(data);
+            } else {
+                console.error('Failed to fetch subscription info');
+            }
+        } catch (error) {
+            console.error('Error fetching subscription info:', error);
+        } finally {
+            setIsLoadingSubscription(false);
+        }
+    };
+    
+    // Call fetchSubscriptionInfo when activeTab changes to 'Subscription Plan'
+    useEffect(() => {
+        if (activeTab === 'Subscription Plan') {
+            fetchSubscriptionInfo();
+        }
+    }, [activeTab, currentUser?.id]);
+    
+    // Format date string
+    const formatDate = (dateString: string) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(date);
+    };
+    
+    // Format currency
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    };
 
     return (
         <div className={replaceClassName('d-flex flex-column flex-md-row w-100')}>
@@ -623,6 +749,11 @@ const ProfileForm: React.FC = () => {
                 {activeTab === 'Edit Profile' && (
                     <div className='card'>
                         <div className='card-body'>
+                            {formStatus && (
+                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
+                                    {formStatus.message}
+                                </div>
+                            )}
                             <form
                                 className={replaceClassName('px-4 pt-4 mb-3 my-sm-0 w-100')}
                                 onSubmit={handleSubmit(submitForm)}
@@ -870,6 +1001,11 @@ const ProfileForm: React.FC = () => {
                     <div>
                         <div className='card'>
                             <div className='card-body'>
+                                {formStatus && (
+                                    <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
+                                        {formStatus.message}
+                                    </div>
+                                )}
                                 <h5 className='mb-4 text-dark'>Change Email Address</h5>
                                 <form
                                     onSubmit={(e) => {
@@ -918,7 +1054,10 @@ const ProfileForm: React.FC = () => {
                                         const confirmPassword = (e.target as any).confirmPassword.value;
 
                                         if (newPassword !== confirmPassword) {
-                                            alert('New password and confirmation password do not match.');
+                                            setFormStatus({
+                                                success: false,
+                                                message: 'New password and confirmation password do not match.'
+                                            });
                                             return;
                                         }
 
@@ -989,8 +1128,84 @@ const ProfileForm: React.FC = () => {
                 {activeTab === 'Subscription Plan' && (
                     <div className='card'>
                         <div className='card-body'>
-                        <h5 className='mb-4 text-dark'>Subscription Plan</h5>
-                            <p>Manage your subscription plan here.</p>
+                            {formStatus && (
+                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
+                                    {formStatus.message}
+                                </div>
+                            )}
+                            <h5 className='mb-4 text-dark'>Subscription Plan</h5>
+                            
+                            {isLoadingSubscription ? (
+                                <div className="text-center py-4">
+                                    <div className="spinner-border" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            ) : subscriptionInfo ? (
+                                <div>
+                                    <div className="card mb-4 border-primary">
+                                        <div className="card-header bg-primary text-white">
+                                            <h5 className="mb-0">Current Plan: {subscriptionInfo.plan}</h5>
+                                        </div>
+                                        <div className="card-body">
+                                            <div className="row">
+                                                <div className="col-md-6 mb-3">
+                                                    <p className="mb-1 fw-bold">Status</p>
+                                                    <p className={`mb-3 ${subscriptionInfo.status === 'active' ? 'text-success' : 'text-warning'}`}>
+                                                        {subscriptionInfo.status.charAt(0).toUpperCase() + subscriptionInfo.status.slice(1)}
+                                                    </p>
+                                                    
+                                                    <p className="mb-1 fw-bold">Start Date</p>
+                                                    <p className="mb-3">{formatDate(subscriptionInfo.startDate)}</p>
+                                                </div>
+                                                <div className="col-md-6 mb-3">
+                                                    <p className="mb-1 fw-bold">Monthly Payment</p>
+                                                    <p className="mb-3">{formatCurrency(subscriptionInfo.amount)}</p>
+                                                    
+                                                    <p className="mb-1 fw-bold">Next Billing Date</p>
+                                                    <p className="mb-3">{formatDate(subscriptionInfo.nextBillingDate)}</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 d-flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-primary"
+                                                    onClick={() => window.open(`${process.env.NEXT_PUBLIC_STRAPI_URL}/manage-subscription/${currentUser?.id}`, '_blank')}
+                                                >
+                                                    Manage Subscription
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-danger"
+                                                    onClick={() => {
+                                                        setFormStatus({
+                                                            success: false,
+                                                            message: 'To cancel your subscription, please use the Manage Subscription button to access your billing portal.'
+                                                        });
+                                                    }}
+                                                >
+                                                    Cancel Subscription
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="alert alert-info">
+                                        <p className="mb-0">You don't have an active subscription. Subscribe to access premium features!</p>
+                                    </div>
+                                    <div className="mt-3">
+                                        <button
+                                            type="button"
+                                            className="btn btn-primary"
+                                            onClick={() => window.location.href = '/plan'}
+                                        >
+                                            View Plans
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -998,6 +1213,11 @@ const ProfileForm: React.FC = () => {
                 {activeTab === 'Delete Account' && (
                     <div className='card'>
                         <div className='card-body'>
+                            {formStatus && (
+                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
+                                    {formStatus.message}
+                                </div>
+                            )}
                             <div className='d-flex align-items-center mb-4'>
                                 <div>
                                     <h5 className='text-dark mb-4'>Delete Account</h5>
