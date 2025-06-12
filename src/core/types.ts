@@ -219,7 +219,7 @@ export type ProducerTypes = PersonTypes & {
     bio?: string
     href: string
     type: string
-    tracks?: TrackTypes[]
+    tracks?: any[]
     soundKits?: SoundKitTypes[]
     isProducer?: boolean
     socialAccounts?: {

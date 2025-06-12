@@ -248,7 +248,7 @@ export const fetchProducers = createAsyncThunk(
             //     return rejectWithValue('No authentication token found');
             // }
             
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?populate[img][fields][0]=url&populate=tracks&populate=soundKits&populate=socialAccounts`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?populate[img][fields][0]=url&populate[tracks][populate]=*&populate[soundKits][populate]=*&populate=*&filters[isProducer][$eq]=true`, {
                 // headers: {
                 //     'Authorization': `Bearer ${token}`
                 // }
@@ -260,8 +260,8 @@ export const fetchProducers = createAsyncThunk(
             }
             
             const data = await response.json();
+            console.log('Producers data api:', data);
             const producers = data
-                ?.filter((user: any) => user.isProducer)
                 ?.map((user: any) => ({
                     id: user.id,
                     name: user.username.toLowerCase(),

@@ -24,42 +24,13 @@ import { title } from '@/core/utils'
 import {
     SoundKitTypes,
     ProducerTypes,
+    TrackTypes,
 } from '@/core/types'
-import { BRAND, SOCIAL } from '@/core/constants/constant'
-
-// Types
-interface Track {
-    id: number;
-    title: string;
-    type: string;
-    cover: string;
-    src: string;
-    duration: string;
-    href: string;
-    thumb: string;
-    date: string;
-    rating: number | null;
-    played: number | null;
-    downloads: number;
-    keys: string[];
-    moods: string[];
-    genre: Array<{
-        id: number;
-        name: string;
-    }>;
-    categories: any[];
-    producers: any[];
-    Producers: Array<{
-        id: number;
-        name: string;
-    }>;
-    bpm: number;
-}
 
 interface Props {
     soundKits: SoundKitTypes[]
     Producers: ProducerTypes[]
-    tracks: Track[]
+    tracks: TrackTypes[]
 }
 
 const propTypes = {
@@ -112,7 +83,7 @@ const Home: React.FC<Props> = ({
         // Create tabs with filtered tracks for each genre
         return genreIds.map(genreId => {
             // Filter tracks that have this genre
-            const genreTracks = tracks.filter(track => 
+            const genreTracks = tracks.filter((track: TrackTypes) => 
                 track.genre.some(g => 
                     g.name.toLowerCase() === genreId.toLowerCase()
                 )
@@ -218,7 +189,7 @@ const Home: React.FC<Props> = ({
                             >
                                 <div className='list'>
                                     {tab.list.length > 0 ? (
-                                        tab.list.map((track: Track) => (
+                                        tab.list.map((track: TrackTypes) => (
                                             <TrackList
                                                 key={track.id}
                                                 data={{

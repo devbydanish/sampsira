@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useProducers } from '@/redux/hooks'
 import LoadingSpinner from '@/core/components/loading-spinner'
 
@@ -21,7 +22,7 @@ type ProducerWithDetails = ProducerTypes & {
         youtube?: { connected: boolean; username: string };
         tiktok?: { connected: boolean; username: string };
     };
-    tracks?: TrackTypes[];
+    tracks?: any[];
     soundKits?: SoundKitTypes[];
 }
 
@@ -29,27 +30,66 @@ export default function ProducerPage() {
     const locale = useTranslations()
     const params = useParams()
     const { producers, loading } = useProducers()
+    const [producer, setProducer] = useState<ProducerWithDetails | undefined>(undefined)
+    const [isLoadingDetails, setIsLoadingDetails] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     
-    console.log('Producer page:', {
-        slug: params.slug,
-        producers: producers?.map(p => ({
-            name: p.name,
-            displayName: p.displayName,
-            tracksCount: p.tracks?.length,
-            soundKitsCount: p.soundKits?.length
-        }))
-    })
-    
-    const producer = producers?.find(p => p.name === (params.slug as string)?.toLowerCase()) as ProducerWithDetails | undefined
-    
-    console.log('Found producer:', producer)
+    useEffect(() => {
+        const fetchProducerDetails = async () => {
+            if (!params.slug) return
+            
+            setIsLoadingDetails(true)
+            setError(null)
+            
+            try {
+                console.log('producers', producers)
+                // Find basic producer info from Redux store
+                const basicProducer = producers?.find(p => 
+                    p.name === (params.slug as string)?.toLowerCase() || 
+                    p.id.toString() === params.slug
+                )
+                
+                if (!basicProducer) {
+                    setError('Producer not found')
+                    setIsLoadingDetails(false)
+                    return
+                }
 
-    if (loading) {
+                const formatedTracks = basicProducer?.tracks?.map((track: any) => ({
+                    ...track,
+                    cover: track.cover?.url ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${track.cover.url}` : '/images/cover/default.jpg',
+                    audio: track.audio?.url ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${track.audio.url}` : '/images/cover/default.jpg'
+                }))
+                
+                // Process the response data
+                const producerDetails: ProducerWithDetails = {
+                    ...basicProducer,
+                    bio: basicProducer.bio || '',
+                    socialAccounts: basicProducer.socialAccounts || {},
+                    tracks: formatedTracks || [],
+                    soundKits: basicProducer.soundKits || []
+                }
+                
+                setProducer(producerDetails)
+            } catch (err) {
+                console.error('Error fetching producer details:', err)
+                setError('Error loading producer details')
+            } finally {
+                setIsLoadingDetails(false)
+            }
+        }
+        
+        if (producers && producers.length > 0) {
+            fetchProducerDetails()
+        }
+    }, [params.slug, producers])
+    
+    if (loading || isLoadingDetails) {
         return <div className="container py-5 text-center"><LoadingSpinner /></div>
     }
 
-    if (!producer) {
-        return <div className="container py-5 text-center">Producer not found</div>
+    if (error || !producer) {
+        return <div className="container py-5 text-center">{error || 'Producer not found'}</div>
     }
 
     return (
@@ -74,9 +114,9 @@ export default function ProducerPage() {
                                                 ...item,
                                                 href: `/tracks/${item.id}`,
                                                 title: item.title,
-                                                src: item.src,
+                                                src: item.audio,
                                                 cover: item.cover,
-                                                type: 'track'
+                                                type: 'track',
                                             }}
                                             duration
                                             dropdown
