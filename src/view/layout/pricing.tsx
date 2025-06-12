@@ -17,6 +17,9 @@ import { loadStripe } from '@stripe/stripe-js';
 // Contexts
 import { useTheme } from '@/core/contexts/theme';
 
+// Utils
+import { getStripeErrorMessage } from '@/utils/stripe-helpers';
+
 // Utilities
 import type { Plan, PlanTypes } from '@/core/types/pricing';
 
@@ -98,6 +101,7 @@ const Pricing: React.FC<Props> = ({data}) => {
         const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
         if (!stripe) {
             console.error('Failed to load Stripe');
+            alert('Payment system is currently unavailable. Please try again later.');
             return;
         }
         
@@ -106,6 +110,7 @@ const Pricing: React.FC<Props> = ({data}) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 },
                 body: JSON.stringify({
                     priceId: stripeProductId,
@@ -117,6 +122,10 @@ const Pricing: React.FC<Props> = ({data}) => {
             const session = await response.json();
             if (session.error) {
                 console.error('Session Error:', session.error);
+                const userMessage = session.error.includes('Authentication') 
+                    ? 'Please log in to continue with your purchase.'
+                    : 'Unable to create payment session. Please try again.';
+                alert(userMessage);
                 return;
             }
 
@@ -126,9 +135,14 @@ const Pricing: React.FC<Props> = ({data}) => {
             
             if (result.error) {
                 console.error('Stripe Error:', result.error);
+                const errorMessage = result.error.code 
+                    ? getStripeErrorMessage(result.error.code)
+                    : 'Payment failed. Please try again.';
+                alert(errorMessage);
             }
         } catch (error) {
             console.error('Error:', error);
+            alert('An unexpected error occurred. Please try again.');
         }
     };
 

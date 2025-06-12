@@ -7,7 +7,7 @@ const mockPlans: PlanTypes[] = [
         name: 'Subscription',
         subtitle: 'Subscribe for unlimited access',
         price: 10,
-        stripeProductId: 'price_monthly_subscription',
+        stripeProductId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MONTHLY_SUBSCRIPTION!,
         features: [
             { id: '1', name: 'Download 100 Samples Monthly', icon: 'download' },
             { id: '2', name: 'Access to All Premium Samples', icon: 'vip' },
@@ -16,11 +16,11 @@ const mockPlans: PlanTypes[] = [
         ]
     },
     {
-        id: 'credits-50',
+        id: 'credits-100',
         name: 'Purchase Credits',
         subtitle: 'Pay as you go',
         price: 15,
-        stripeProductId: 'price_credits_50',
+        stripeProductId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_CREDITS!,
         features: [
             { id: '1', name: '100 Credits', icon: 'credits' },
             { id: '2', name: 'Access to All Samples', icon: 'samples' },
