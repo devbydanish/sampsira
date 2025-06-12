@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
         product: productId,
         active: true,
       });
+
+      console.log('prices', prices);
       
       if (prices.data.length === 0) {
         throw new Error('No active prices found for this product');

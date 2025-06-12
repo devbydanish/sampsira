@@ -86,7 +86,7 @@ const ProfileForm: React.FC = () => {
             const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/users/request-deletion`, {
                 method: "POST",
                 headers: {
-                    Authorization: `Bearer ${currentUser.jwt}`,
+                    Authorization: `Bearer ${localStorage.getItem('jwt')}`,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
@@ -492,7 +492,7 @@ const ProfileForm: React.FC = () => {
             const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/users/send-email-confirmation`, {
                 method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${currentUser.jwt}`,
+                    Authorization: `Bearer ${localStorage.getItem('jwt')}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -640,7 +640,7 @@ const ProfileForm: React.FC = () => {
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate[0]=tracks&populate[1]=soundKits`, {
                         headers: {
-                            'Authorization': `Bearer ${currentUser.jwt}`
+                            'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                         }
                     });
                     const data = await response.json();
@@ -668,17 +668,25 @@ const ProfileForm: React.FC = () => {
         setIsLoadingSubscription(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/subscriptions/user/${currentUser.id}`,
+                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${currentUser.jwt}`,
+                        Authorization: `Bearer ${localStorage.getItem('jwt')}`,
                     },
                 }
             );
             
             if (response.ok) {
                 const data = await response.json();
-                setSubscriptionInfo(data);
+                const subData = {
+                    status: data.subscriptionStatus.length > 0 ? data.subscriptionStatus : "No Subscription",
+                    plan: new Date(data.subscribedUntil) > new Date()? "Monthly" : "No Subscription",
+                    // Date a month before subscribedUntil
+                    startDate: new Date(new Date(data.subscribedUntil).setMonth(new Date(data.subscribedUntil).getMonth() - 1)).toISOString() || new Date().toISOString(),
+                    nextBillingDate: data.subscribedUntil || new Date().toISOString(),
+                    amount: data.isSubscribed ? 10 : 0
+                }
+                setSubscriptionInfo(subData);
             } else {
                 console.error('Failed to fetch subscription info');
             }
@@ -1165,26 +1173,60 @@ const ProfileForm: React.FC = () => {
                                                     <p className="mb-1 fw-bold">Next Billing Date</p>
                                                     <p className="mb-3">{formatDate(subscriptionInfo.nextBillingDate)}</p>
                                                 </div>
+                                                {/* Credits subscription and other */}
+                                            <div className="col-12 mt-3">
+                                                <div className="card border-info">
+                                                    <div className="card-header bg-info text-white">
+                                                        <h6 className="mb-0">Credits Information</h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="row">
+                                                            <div className="col-md-6">
+                                                                <p className="mb-1 fw-bold">Subscription Credits</p>
+                                                                <p className="mb-3">{currentUser?.sub_credits || 0} credits</p>
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <p className="mb-1 fw-bold">Regular Credits</p>
+                                                                <p className="mb-3">{currentUser?.credits || 0} credits</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             </div>
                                             <div className="mt-3 d-flex gap-2">
                                                 <button
                                                     type="button"
                                                     className="btn btn-outline-primary"
-                                                    onClick={() => window.open(`${process.env.NEXT_PUBLIC_STRAPI_URL}/manage-subscription/${currentUser?.id}`, '_blank')}
-                                                >
-                                                    Manage Subscription
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline-danger"
-                                                    onClick={() => {
-                                                        setFormStatus({
-                                                            success: false,
-                                                            message: 'To cancel your subscription, please use the Manage Subscription button to access your billing portal.'
-                                                        });
+                                                    onClick={async () => {
+                                                        try {
+                                                            const response = await fetch('/api/create-portal-session', {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'Content-Type': 'application/json',
+                                                                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    customerId: currentUser?.stripeCustomerId
+                                                                })
+                                                            });
+                                                            
+                                                            if (!response.ok) {
+                                                                throw new Error('Failed to create portal session');
+                                                            }
+                                                            
+                                                            const { url } = await response.json();
+                                                            window.location.href = url;
+                                                        } catch (error) {
+                                                            console.error('Error creating portal session:', error);
+                                                            setFormStatus({
+                                                                success: false,
+                                                                message: 'Failed to access billing portal. Please try again.'
+                                                            });
+                                                        }
                                                     }}
                                                 >
-                                                    Cancel Subscription
+                                                    Manage Subscription
                                                 </button>
                                             </div>
                                         </div>

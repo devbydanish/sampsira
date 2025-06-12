@@ -118,6 +118,7 @@ export type CurrentUserTypes = PersonTypes & {
     lastName: string
     displayName?: string
     credits: number
+    sub_credits?: number
     bio?: string
     socialAccounts?: {
         instagram?: SocialMediaAccountType

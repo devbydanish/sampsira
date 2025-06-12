@@ -41,6 +41,7 @@ interface BaseUserTypes extends InfoType {
     location?: string;
     socialAccounts?: SocialAccounts;
     credits?: number;
+    sub_credits?: number;
 }
 
 export interface CurrentUserTypes extends BaseUserTypes, RoleFlags {}

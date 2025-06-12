@@ -16,6 +16,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 // Contexts
 import { useTheme } from '@/core/contexts/theme';
+import { useAuthentication } from '@/core/contexts/authentication';
 
 // Utils
 import { getStripeErrorMessage } from '@/utils/stripe-helpers';
@@ -52,9 +53,11 @@ const FeatureIcon: React.FC<FeatureIconProps> = ({ iconName }) => {
     return iconMap[iconName as keyof typeof iconMap] || <RiDownloadLine {...iconProps} />;
 };
 
-const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: boolean) => void}> = ({ plan, onPurchase }) => {
+const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: boolean) => void; onManage: () => void}> = ({ plan, onPurchase, onManage }) => {
     const pricing = useTranslations('pricing');
+    const { currentUser } = useAuthentication();
     const isSubscription = plan.id === 'monthly-subscription';
+    const hasActiveSubscription = currentUser?.isSubscribed && currentUser?.subscriptionStatus === 'active';
 
     return (
         <div className='card h-100 shadow border-0' style={{ borderRadius: '12px', maxWidth: '500px', margin: '0 auto' }}>
@@ -83,13 +86,23 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
                     ))}
                 </div>
 
-                <button
-                    type='button'
-                    className='btn btn-primary w-100 py-3'
-                    onClick={() => onPurchase(plan.stripeProductId, isSubscription)}
-                >
-                    {isSubscription ? pricing('subscribe') : pricing('buyCredits')}
-                </button>
+                {isSubscription && hasActiveSubscription ? (
+                    <button
+                        type='button'
+                        className='btn btn-outline-primary w-100 py-3'
+                        onClick={onManage}
+                    >
+                        {pricing('manage')}
+                    </button>
+                ) : (
+                    <button
+                        type='button'
+                        className='btn btn-primary w-100 py-3'
+                        onClick={() => onPurchase(plan.stripeProductId, isSubscription)}
+                    >
+                        {isSubscription ? pricing('subscribe') : pricing('buyCredits')}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -97,7 +110,36 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
 
 const Pricing: React.FC<Props> = ({data}) => {
     const pricing = useTranslations('pricing');
+    const { currentUser } = useAuthentication();
+
+    const handleManageSubscription = async () => {
+        try {
+            const response = await fetch('/api/create-portal-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                },
+                body: JSON.stringify({
+                    customerId: currentUser?.stripeCustomerId
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to create portal session');
+            }
+            
+            const { url } = await response.json();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error creating portal session:', error);
+            alert('Failed to access billing portal. Please try again.');
+        }
+    };
+
     const handlePurchase = async (stripeProductId: string, isSubscription: boolean = false) => {
+        console.log('stripeProductId', stripeProductId);
+        console.log('isSubscription', isSubscription);
         const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
         if (!stripe) {
             console.error('Failed to load Stripe');
@@ -159,13 +201,23 @@ const Pricing: React.FC<Props> = ({data}) => {
                 <div className='row justify-content-center align-items-stretch g-5'>
                     <div className='col-12 col-lg-6'>
                         {subscriptionPlans.map(plan => (
-                            <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
+                            <PlanCard 
+                                key={plan.id} 
+                                plan={plan} 
+                                onPurchase={handlePurchase}
+                                onManage={handleManageSubscription}
+                            />
                         ))}
                     </div>
 
                     <div className='col-12 col-lg-6'>
                         {creditPlans.map(plan => (
-                            <PlanCard key={plan.id} plan={plan} onPurchase={handlePurchase} />
+                            <PlanCard 
+                                key={plan.id} 
+                                plan={plan} 
+                                onPurchase={handlePurchase}
+                                onManage={handleManageSubscription}
+                            />
                         ))}
                     </div>
                 </div>

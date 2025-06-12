@@ -33,76 +33,229 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error }, { status: 400 });
   }
 
+  console.log('Webhook event received:', event!.type);
+
   // Handle different Stripe events
-  switch (event!.type) {
-    // Handle successful subscription creation
-    case 'checkout.session.completed': {
-      try {
-        console.log('event', event);
+  try {
+    switch (event!.type) {
+      // Handle successful subscription creation
+      case 'checkout.session.completed': {
+        console.log('checkout.session.completed');
         const session = event!.data.object as Stripe.Checkout.Session;
-        console.log('session', session);
         if (session.payment_status === 'paid') {
           const userId = session.metadata?.userId;
           const isSubscription = session.metadata?.isSubscription === 'true';
           console.log('userId', userId);
           console.log('isSubscription', isSubscription);
           if (!userId) {
-            console.error('No userId found in session metadata');
-            return NextResponse.json({ error: 'No userId found' }, { status: 400 });
+            throw new Error('No userId found in session metadata');
           }
           
-          // Update user based on purchase type
           if (isSubscription) {
-            // Update user subscription status
             await updateUserSubscription(userId, session);
           } else {
-            // Add credits to user account
             console.log('Adding credits to user account');
             await addCreditsToUser(userId, session);
           }
-        
         }
-      } catch (error) {
-        console.error('Error handling checkout.session.completed:', error);
-        return NextResponse.json({ error: 'Error handling checkout.session.completed' }, { status: 500 });
+        break;
       }
-      break;
+      
+      case 'customer.subscription.created': {
+        console.log('customer.subscription.created');
+        const subscription = event!.data.object as Stripe.Subscription;
+        // Only handle active subscriptions
+        if (subscription.status === 'active') {
+          await handleSubscriptionCreated(subscription);
+        }
+        break;
+      }
+      
+      case 'customer.subscription.updated': {
+        console.log('customer.subscription.updated');
+        const subscription = event!.data.object as Stripe.Subscription;
+        // Find user by customer ID instead of subscription ID for more reliability
+        await handleSubscriptionUpdate(subscription);
+        break;
+      }
+      
+      case 'customer.subscription.deleted': {
+        console.log('customer.subscription.deleted');
+        const subscription = event!.data.object as Stripe.Subscription;
+        await handleSubscriptionCancellation(subscription);
+        break;
+      }
+      
+      case 'invoice.payment_succeeded': {
+        console.log('invoice.payment_succeeded');
+        const invoice = event!.data.object as Stripe.Invoice;
+        if ((invoice as any).subscription) {
+          await handleSubscriptionRenewal(invoice);
+        }
+        break;
+      }
+      
+      case 'invoice.payment_failed': {
+        console.log('invoice.payment_failed');
+        const invoice = event!.data.object as Stripe.Invoice;
+        await handleInvoicePaymentFailure(invoice);
+        break;
+      }
+      
+      default:
+        console.log(`Unhandled event type: ${event!.type}`);
     }
     
-    // Handle subscription status changes
-    case 'customer.subscription.updated': {
-      const subscription = event!.data.object as Stripe.Subscription;
-      await handleSubscriptionUpdate(subscription);
-      break;
-    }
-    
-    case 'customer.subscription.deleted': {
-      const subscription = event!.data.object as Stripe.Subscription;
-      await handleSubscriptionCancellation(subscription);
-      break;
-    }
-    
-    // Handle invoice payment success/failure
-    case 'invoice.payment_succeeded': {
-      const invoice = event!.data.object as Stripe.Invoice;
-      await handleInvoicePaymentSuccess(invoice);
-      break;
-    }
-    
-    case 'invoice.payment_failed': {
-      const invoice = event!.data.object as Stripe.Invoice;
-      await handleInvoicePaymentFailure(invoice);
-      break;
-    }
-    
-    default:
-      console.log(`Unhandled event type: ${event!.type}`);
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
-  
-  return NextResponse.json({ received: true });
 }
 
-// Helper functions for handling different webhook events
+// Helper function to find user by customer ID
+async function findUserByCustomerId(customerId: string) {
+  const userResponse = await fetch(
+    `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?filters[stripeCustomerId][$eq]=${customerId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+      },
+    }
+  );
+  
+  if (!userResponse.ok) {
+    throw new Error('Failed to fetch user data');
+  }
+  
+  const userData = await userResponse.json();
+  
+  if (!userData || userData.length === 0) {
+    throw new Error('User not found');
+  }
+  
+  return userData[0];
+}
+
+async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+  try {
+    console.log("Subscription in creation: ", subscription);
+    const user = await findUserByCustomerId(subscription.customer as string);
+    console.log("User data in creation: ", user);
+    
+    // Update user subscription details only - credits are handled by checkout.session.completed
+    const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+      },
+      body: JSON.stringify({
+        isSubscribed: true,
+        subscriptionId: subscription.id,
+        subscriptionStatus: subscription.status,
+        subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        firstSubscriptionDate: user.firstSubscriptionDate || new Date().toISOString(),
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update user subscription status');
+    }
+  } catch (error) {
+    console.error('Error handling subscription creation:', error);
+    throw error;
+  }
+}
+
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  try {
+    const user = await findUserByCustomerId(subscription.customer as string);
+    
+    // Update subscription status
+    await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+      },
+      body: JSON.stringify({
+        subscriptionStatus: subscription.status,
+        subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      }),
+    });
+  } catch (error) {
+    console.error('Error handling subscription update:', error);
+    throw error;
+  }
+}
+
+async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
+  try {
+    if (!(invoice as any).subscription) return;
+    
+    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
+    const user = await findUserByCustomerId(invoice.customer as string);
+
+    // Only handle renewals, not the initial subscription payment
+    // Check if this is a renewal by looking at the billing_reason
+    if (invoice.billing_reason === 'subscription_cycle') {
+      // Create credit transaction for renewal
+      const transactionResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/credit-transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        },
+        body: JSON.stringify({
+          data: {
+            users_permissions_user: user.id,
+            amount: 100,
+            type: 'subscription',
+            stripeInvoiceId: invoice.id,
+            status: 'completed',
+            date: new Date().toISOString(),
+            publishedAt: new Date().toISOString()
+          }
+        }),
+      });
+      
+      if (!transactionResponse.ok) {
+        throw new Error('Failed to create renewal credit transaction');
+      }
+      
+      // Update user subscription details
+      await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        },
+        body: JSON.stringify({
+          subscriptionStatus: subscription.status,
+          subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
+          sub_credits: (user.sub_credits || 0) + 100, // Add new subscription credits only for renewals
+        }),
+      });
+    } else {
+      // For initial subscription, just update the subscription status
+      await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+        },
+        body: JSON.stringify({
+          subscriptionStatus: subscription.status,
+          subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        }),
+      });
+    }
+  } catch (error) {
+    console.error('Error handling subscription renewal:', error);
+    throw error;
+  }
+}
 
 async function updateUserSubscription(userId: string, session: Stripe.Checkout.Session) {
   try {
@@ -134,6 +287,22 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
       throw new Error('Failed to create subscription credit transaction');
     }
     
+    // Get current user data
+    const userResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+      },
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+    
+    const userData = await userResponse.json();
+    
+    // For first-time subscribers, we need to ensure we handle any existing sub_credits
+    const existingSubCredits = userData.sub_credits || 0;
+    
     // Update user in Strapi
     const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       method: 'PUT',
@@ -145,7 +314,11 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
         isSubscribed: true,
         subscriptionId: subscription.id,
         subscriptionStatus: subscription.status,
-        subscriptionPeriodEnd: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
+        // For first-time subscribers, add 100 new credits to any existing sub_credits
+        // This handles cases where they had leftover sub_credits from a previous subscription
+        sub_credits: existingSubCredits + 100,
+        firstSubscriptionDate: userData.firstSubscriptionDate || new Date().toISOString(),
       }),
     });
     
@@ -243,48 +416,6 @@ async function addCreditsToUser(userId: string, session: Stripe.Checkout.Session
   }
 }
 
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
-  try {
-    // Find the user with this subscription
-    const userResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?filters[subscriptionId][$eq]=${subscription.id}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
-        },
-      }
-    );
-    
-    if (!userResponse.ok) {
-      throw new Error('Failed to fetch user data');
-    }
-    
-    const userData = await userResponse.json();
-    
-    if (!userData.data || userData.data.length === 0) {
-      throw new Error('User not found for subscription');
-    }
-    
-    const userId = userData.data[0].id;
-    
-    // Update subscription status
-    await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
-      },
-      body: JSON.stringify({
-        subscriptionStatus: subscription.status,
-        subscriptionPeriodEnd: new Date((subscription as any).current_period_end * 1000).toISOString(),
-      }),
-    });
-  } catch (error) {
-    console.error('Error handling subscription update:', error);
-    throw error;
-  }
-}
-
 async function handleSubscriptionCancellation(subscription: Stripe.Subscription) {
   try {
     // Find the user with this subscription
@@ -303,11 +434,11 @@ async function handleSubscriptionCancellation(subscription: Stripe.Subscription)
     
     const userData = await userResponse.json();
     
-    if (!userData.data || userData.data.length === 0) {
+    if (!userData || userData.length === 0) {
       throw new Error('User not found for subscription');
     }
     
-    const userId = userData.data[0].id;
+    const userId = userData[0].id;
     
     // Update subscription status
     await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
@@ -319,18 +450,16 @@ async function handleSubscriptionCancellation(subscription: Stripe.Subscription)
       body: JSON.stringify({
         isSubscribed: false,
         subscriptionStatus: 'canceled',
+        // Do not reset sub_credits to zero here
+        // They will remain but won't be usable until subscription is renewed
       }),
     });
+    
+    console.log('Subscription cancelled for user:', userId);
   } catch (error) {
     console.error('Error handling subscription cancellation:', error);
     throw error;
   }
-}
-
-async function handleInvoicePaymentSuccess(invoice: Stripe.Invoice) {
-  // If you need to handle successful invoice payments differently
-  // For example, sending confirmation emails or updating usage records
-  console.log('Invoice payment succeeded:', invoice.id);
 }
 
 async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
@@ -353,11 +482,11 @@ async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
     
     const userData = await userResponse.json();
     
-    if (!userData.data || userData.data.length === 0) {
+    if (!userData || userData.length === 0) {
       throw new Error('User not found for subscription');
     }
     
-    const userId = userData.data[0].id;
+    const userId = userData[0].id;
     
     // Update subscription status to reflect payment failure
     await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
