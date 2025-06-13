@@ -26,6 +26,7 @@ import {
     ProducerTypes,
     TrackTypes,
 } from '@/core/types'
+import { BRAND } from '@/core/constants/constant'
 
 interface Props {
     soundKits: SoundKitTypes[]
@@ -248,24 +249,18 @@ const Home: React.FC<Props> = ({
 
             <section className='container'>
                 {/* Newsletter [[ Find at scss/base/core.scss ]] */}
-                <div className='newsletter'>
-                    <div className='newsletter__content'>
-                        <h2>{footer('newsletter_title')}</h2>
-                        <p>{footer('newsletter_subtitle')}</p>
-                        <form action='#'>
-                            <div className='form-group'>
-                                <input
-                                    type='text'
-                                    className='form-control'
-                                    placeholder={footer('newsletter_email')}
-                                />
-                                <button type='button' className='btn'>
-                                    {footer('newsletter_subscribe')}
-                                </button>
-                            </div>
-                        </form>
+                <div className='newsletter text-white'>
+                    <div className='col-xl-7 col-lg-10 fs-5 mx-auto text-center'>
+                        <h2 className='text-white'>
+                            {footer('title') + ' '} 
+                            <span className='newsletter__title-text'>{BRAND.name}</span>
+                        </h2>
+                        <p>{footer('description')}</p>
+                        <Link href='/auth/register' className='btn btn-lg btn-white mt-3'>
+                            {locale('register_now')}
+                        </Link>
                     </div>
-                </div>
+                </div>  
             </section>
         </div>
     )

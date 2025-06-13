@@ -51,6 +51,85 @@ const initialState: AuthState = {
     token: ''
 };
 
+// Register User
+export const registerUser = createAsyncThunk(
+    "registerUser",
+    async (userData: any, thunkAPI) => {
+        try {
+            console.log('Registering user with data:', userData);
+            
+            // Register the user with Strapi
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/local/register`,
+                {
+                    username: userData.username,
+                    displayName: userData.firstName + ' ' + userData.lastName,
+                    email: userData.email,
+                    password: userData.password,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    city: userData.city || '',
+                    state: userData.state || '',
+                    isProducer: false,
+                }
+            );
+
+            return { message: "Registration successful. Please check your email to verify your account." };
+        } catch (error: any) {
+            console.error('Registration error:', error?.response?.data || error);
+            return thunkAPI.rejectWithValue(error?.response?.data || { error: 'Registration failed' });
+        }
+    }
+);
+
+// Register Producer
+export const registerProducer = createAsyncThunk(
+    "registerProducer",
+    async (userData: any, thunkAPI) => {
+        try {
+            console.log('Registering producer with data:', userData);
+            
+            // Register the producer with Strapi
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/local/register`,
+                {
+                    username: userData.username,
+                    email: userData.email,
+                    password: userData.password,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    city: userData.city || '',
+                    state: userData.state || '',
+                    isProducer: true,
+                    displayName: userData.producerName || '',
+                }
+            );
+
+            return { message: "Registration successful. Please check your email to verify your account." };
+        } catch (error: any) {
+            console.error('Producer registration error:', error?.response?.data || error);
+            return thunkAPI.rejectWithValue(error?.response?.data || { error: 'Producer registration failed' });
+        }
+    }
+);
+
+// Forgot Password
+export const forgotPassword = createAsyncThunk(
+    "forgotPassword",
+    async ({ email }: { email: string }, thunkAPI) => {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/forgot-password`,
+                { email }
+            );
+            
+            return { message: "Password reset link sent to your email" };
+        } catch (error: any) {
+            return thunkAPI.rejectWithValue(error.response?.data || { error: 'Failed to send password reset email' });
+        }
+    }
+);
+
 export const loginUser = createAsyncThunk(
     "loginUser",
     async (params: { email: string; password: string }, thunkAPI) => {
@@ -150,6 +229,10 @@ const userSlice = createSlice({
         resetError: (state: AuthState) => {
             state.error = null;
             state.message = "";
+            state.registerError = null;
+        },
+        setEmailVerified: (state: AuthState) => {
+            state.message = "Your email has been verified. You can now log in.";
         },
         LoginUs: (state: AuthState) => {
             state.isAuthenticated = true;
@@ -165,6 +248,7 @@ const userSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Login cases
             .addCase(loginUser.pending, (state) => {
                 state.status = "loading";
                 state.error = null;
@@ -191,11 +275,63 @@ const userSlice = createSlice({
                 state.isAuthenticated = false;
                 state.user = null;
                 state.token = "";
+            })
+            
+            // Register user cases
+            .addCase(registerUser.pending, (state) => {
+                state.regStatus = "loading";
+                state.registerError = null;
+            })
+            .addCase(registerUser.fulfilled, (state, action) => {
+                state.regStatus = "succeeded";
+                state.message = action.payload.message;
+                state.registerError = null;
+                state.regStatus = "idle";
+            })
+            .addCase(registerUser.rejected, (state, action: any) => {
+                state.regStatus = "failed";
+                state.registerError = action.payload?.error?.message || 
+                                  action.payload?.message || 
+                                  'Registration failed';
+            })
+            
+            // Register producer cases
+            .addCase(registerProducer.pending, (state) => {
+                state.regStatus = "loading";
+                state.registerError = null;
+            })
+            .addCase(registerProducer.fulfilled, (state, action) => {
+                state.regStatus = "succeeded";
+                state.message = action.payload.message;
+                state.registerError = null;
+            })
+            .addCase(registerProducer.rejected, (state, action: any) => {
+                state.regStatus = "failed";
+                state.registerError = action.payload?.error?.message || 
+                                  action.payload?.message || 
+                                  'Producer registration failed';
+            })
+            
+            // Forgot password cases
+            .addCase(forgotPassword.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+                state.message = "";
+            })
+            .addCase(forgotPassword.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+            })
+            .addCase(forgotPassword.rejected, (state, action: any) => {
+                state.status = "failed";
+                state.error = action.payload?.error?.message || 
+                          action.payload?.message || 
+                          'Failed to send password reset email';
             });
     },
 });
 
-export const { getUser, resetError, LoginUs, LogoutUs } = userSlice.actions;
+export const { getUser, resetError, setEmailVerified, LoginUs, LogoutUs } = userSlice.actions;
 
 // Helper function for logout that dispatches both actions
 export const logout = () => (dispatch: any) => {

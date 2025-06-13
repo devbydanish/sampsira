@@ -26,6 +26,7 @@ import MusicFooter from '@/core/components/footer/music'
 import Music from '@/view/layout/music'
 import AudioPlayer from '@/core/components/audio-player'
 import Sidebar from '@/core/components/sidebar'
+import { ToastContainer } from 'react-toastify'
 
 // Metadata
 export const metadata: Metadata = {
@@ -83,6 +84,7 @@ export default async function RootLayout({
             </Authentication>
           </Providers>
         </NextIntlClientProvider>
+        <ToastContainer />
       </body>
     </html>
   )

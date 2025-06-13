@@ -6,37 +6,43 @@
 "use client"
 
 // Modules
-import React from 'react'
+import React, { useEffect } from 'react'
 import classNames from 'classnames'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 import { RiGoogleFill } from '@remixicon/react'
 import { useLocalStorage } from 'usehooks-ts'
+import { useDispatch, useSelector } from 'react-redux'
+import { ThunkDispatch } from '@reduxjs/toolkit'
+import { toast } from 'react-toastify'
 
 // Contexts
 import { useTheme } from '@/core/contexts/theme'
 import { useAuthentication } from '@/core/contexts/authentication'
+import { registerProducer, resetError, setEmailVerified } from '@/redux/features/userSlice'
+import { RootState } from '@/redux/store'
 
 // Components
 import Input from '@/core/components/input'
 import ErrorHandler from '@/core/components/error'
 
 // Utilities
-import { postData } from '@/core/utils/api-call'
 import { PASSWORD } from '@/core/constants/regex'
-import { SUCCESSFUL } from '@/core/constants/codes'
 import { USER_KEY } from '@/core/constants/constant'
 import { ProducerRegisterTypes } from '@/core/types'
 
 const RegisterProducerForm: React.FC = () => {
-
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [, saveUser] = useLocalStorage<any>(USER_KEY, null)
     const {replaceClassName} = useTheme()
     const { signInWithGoogle } = useAuthentication()
     const auth = useTranslations('auth')
+    const dispatch = useDispatch<ThunkDispatch<RootState, any, any>>()
+    const { isAuthenticated, regStatus, message, registerError } = useSelector((state: RootState) => state.user)
+    
     const {
         register,
         handleSubmit,
@@ -53,6 +59,7 @@ const RegisterProducerForm: React.FC = () => {
     })
 
     const email = watch('email')
+    const password = watch('password')
     const [username, setUsername] = React.useState('');
 
     React.useEffect(() => {
@@ -65,23 +72,69 @@ const RegisterProducerForm: React.FC = () => {
 
         generateUsername();
     }, [watch('producerName'), setValue]);
+    
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push("/")
+        }
+    }, [router, isAuthenticated])
+
+    useEffect(() => {
+        if (message) {
+            toast.success(message);
+            
+            router.push('/')
+        }
+        
+        if (registerError) {
+            toast.error(registerError);
+        }
+        
+        return () => {
+            dispatch(resetError());
+        };
+    }, [message, registerError, regStatus, dispatch, router]);
 
     /**
      * Handle form `onSubmit` event
      * @param data
      */
     const submitForm = async (data: ProducerRegisterTypes) => {
-        await postData('/api/register', {...data, role: 'producer'}).then(result => {
-            if (result.status === SUCCESSFUL) {
-                saveUser({...data, role: 'producer'})
-                router.push('/')
+        try {
+            const validateUser = await fetch(`/api/user/validate?username=${username}&email=${email}`)
+            const result = await validateUser.json()
+            
+            if (result.message === "User already exists") {
+                toast.error("El correo electrónico que ingesaste ya está registrado")
+                return
             }
-        })
+            
+            const userData = {
+                username,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                email: data.email,
+                password: data.password,
+                producerName: data.producerName,
+                city: data.city,
+                state: data.state,
+                role: 'producer'
+            }
+            
+            await dispatch(registerProducer(userData) as any);
+            
+        } catch (error) {
+            console.error('Registration error:', error)
+            toast.error('Registration failed. Please try again.')
+        }
     }
 
+    const onSubmit = handleSubmit(async (data) => {
+        await submitForm(data);
+    });
+
     return (
-        <>
-        <form className='mt-5' onSubmit={handleSubmit(submitForm)}>
+        <form className='mt-5' onSubmit={onSubmit}>
             <div className="mb-4">
                 <Link href="/auth/register" className="d-block mb-2">
                     {auth('register_user')}
@@ -185,6 +238,29 @@ const RegisterProducerForm: React.FC = () => {
                 />
                 {<ErrorHandler root={errors?.confirmEmail as any} />}
             </div>
+            <div className='mb-3'>
+                <Input
+                    label="Password"
+                    type="password"
+                    id='password'
+                    className={classNames(
+                        'form-control',
+                        errors?.password && 'is-invalid'
+                    )}
+                    {...register('password', {
+                        required: "Password is required",
+                        minLength: {
+                            value: 12,
+                            message: "Password must be at least 12 characters"
+                        },
+                        pattern: {
+                            value: PASSWORD,
+                            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+                        }
+                    })}
+                />
+                {<ErrorHandler root={errors?.password as any} />}
+            </div>
             <div className='row mb-3'>
                 <div className='col-md-6'>
                     <Input
@@ -232,10 +308,10 @@ const RegisterProducerForm: React.FC = () => {
                 <button
                     type='submit'
                     className={classNames(
-                        'btn btn-primary w-100 btn-loading',
-                        isSubmitting && 'active'
+                        'btn btn-primary w-100',
+                        (isSubmitting || regStatus === 'loading') && 'btn-loading'
                     )}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || regStatus === 'loading'}
                 >
                     {auth('register')}
                 </button>
@@ -244,7 +320,6 @@ const RegisterProducerForm: React.FC = () => {
                 <Link href='/auth/login' className='fw-medium'>{auth('login')}</Link>
             </p>
         </form>
-        </>
     )
 }
 
