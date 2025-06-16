@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { RiAddLine, RiDeleteBinLine } from '@remixicon/react'
 import { useAuthentication } from '@/core/contexts/authentication'
 import { useTheme } from '@/core/contexts/theme'
+import Image from 'next/image'
 
 // Components
 import Tab from '@/core/components/tab'
@@ -28,6 +29,8 @@ interface SoundKitFormData {
     cover: File | null;
 }
 
+const allowedGenres = ['Reggaeton', 'Trap', 'Hip-Hop/Rap', 'Drill', 'Techno', 'Drum & Bass', 'Jersey Club', 'Dancehall', 'Afrobeat'];
+
 interface TrackState {
     id: string;
     title: string;
@@ -35,9 +38,57 @@ interface TrackState {
     bpm: string;
     moods: string[];
     keys: string[];
+    genre: string;
 }
 
 const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB
+
+const FilePreview: React.FC<{ file: File | null }> = ({ file }) => {
+    const [preview, setPreview] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!file) {
+            setPreview(null);
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setPreview(objectUrl);
+
+        return () => {
+            URL.revokeObjectURL(objectUrl);
+        };
+    }, [file]);
+
+    if (!file || !preview) return null;
+
+    if (file.type.startsWith('image/')) {
+        return (
+            <div className="mt-3 position-relative" style={{ width: '100%', height: '200px' }}>
+                <Image
+                    src={preview}
+                    alt="Cover preview"
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    className="rounded"
+                />
+            </div>
+        );
+    }
+
+    if (file.type.startsWith('audio/')) {
+        return (
+            <div className="mt-3">
+                <audio controls className="w-100">
+                    <source src={preview} type={file.type} />
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        );
+    }
+
+    return null;
+};
 
 const SongCard: React.FC = () => {
     const { replaceClassName } = useTheme()
@@ -56,7 +107,8 @@ const SongCard: React.FC = () => {
         audio: null,
         bpm: '',
         moods: [],
-        keys: []
+        keys: [],
+        genre: ''
     }])
 
     // Track form for single track upload
@@ -68,7 +120,8 @@ const SongCard: React.FC = () => {
             audio: null,
             bpm: '',
             moods: [],
-            keys: []
+            keys: [],
+            genre: ''
         }
     })
 
@@ -135,8 +188,9 @@ const SongCard: React.FC = () => {
             uploadData.append('data', JSON.stringify({
                 title: formData.title,
                 bpm: formData.bpm,
-                moods: formData.moods,
-                keys: formData.keys,
+                moods: formData.moods.join(','),
+                keys: formData.keys.join(','),
+                genre: formData.genre,
                 publishedAt: null
             }))
 
@@ -168,7 +222,8 @@ const SongCard: React.FC = () => {
             audio: null,
             bpm: '',
             moods: [],
-            keys: []
+            keys: [],
+            genre: ''
         }])
     }
 
@@ -291,7 +346,8 @@ const SongCard: React.FC = () => {
                                         title: track.title,
                                         bpm: track.bpm,
                                         moods: track.moods,
-                                        keys: track.keys
+                                        keys: track.keys,
+                                        genre: track.genre
                                     })),
                                     publishedAt: null
                                 }));
@@ -345,6 +401,7 @@ const SongCard: React.FC = () => {
                                             }
                                         }}
                                     />
+                                    <FilePreview file={soundKitForm.watch('cover')} />
                                 </div>
                                 {tracks.map((track, index) => (
                                     <div key={track.id} className="col-12 border rounded p-3 position-relative">
@@ -382,6 +439,7 @@ const SongCard: React.FC = () => {
                                                     }}
                                                     style={{ height: '150px' }}
                                                 />
+                                                <FilePreview file={track.audio} />
                                             </div>
                                             <div className="col-12">
                                                 <label className="form-label">BPM</label>
@@ -392,6 +450,21 @@ const SongCard: React.FC = () => {
                                                     onChange={(e) => updateTrack(track.id, 'bpm', e.target.value)}
                                                     className="form-control"
                                                 />
+                                            </div>
+                                            <div className="col-12">
+                                                <label className="form-label">{locale('genre')}</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={track.genre}
+                                                    onChange={(e) => updateTrack(track.id, 'genre', e.target.value)}
+                                                >
+                                                    <option value="">{locale('select_genre')}</option>
+                                                    {allowedGenres.map((genre) => (
+                                                        <option key={genre} value={genre}>
+                                                            {genre}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div className="col-12">
                                                 <label className="form-label">{locale('moods')}</label>
