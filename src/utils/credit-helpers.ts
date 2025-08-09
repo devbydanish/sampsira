@@ -8,19 +8,19 @@
  * @returns Total usable credits
  */
 export function getTotalCredits(user: any): number {
-  // Regular credits (permanent)
+  // Regular credits (now only usable if subscription is active)
   const regularCredits = user.credits || 0;
   
   // Subscription credits (only usable if subscription is active)
   const subCredits = user.sub_credits || 0;
   
-  // Check if subscription is active to determine if sub_credits should be counted
-  const isSubscriptionActive = 
+  // Check if subscription is active to determine if credits should be counted
+  const isSubscriptionActive =
     user.isSubscribed === true &&
     user.subscriptionStatus === 'active';
   
-  // If subscription is active, count sub_credits, otherwise only count regular credits
-  return regularCredits + (isSubscriptionActive ? subCredits : 0);
+  // If subscription is active, count both credits, otherwise neither is usable
+  return isSubscriptionActive ? (regularCredits + subCredits) : 0;
 }
 
 /**
@@ -34,17 +34,19 @@ export function calculateCreditUsage(user: any, amount: number): {
   regularCreditsToUse: number;
   sufficient: boolean;
 } | null {
+  // Regular credits (now only usable if subscription is active)
   const regularCredits = user.credits || 0;
   const subCredits = user.sub_credits || 0;
   
-  // Check if subscription is active to determine if sub_credits should be counted
-  const isSubscriptionActive = 
+  // Check if subscription is active to determine if credits should be counted
+  const isSubscriptionActive =
     user.isSubscribed === true &&
     user.subscriptionStatus === 'active';
   
   // Total available credits
+  const availableRegularCredits = isSubscriptionActive ? regularCredits : 0;
   const availableSubCredits = isSubscriptionActive ? subCredits : 0;
-  const totalCredits = regularCredits + availableSubCredits;
+  const totalCredits = availableRegularCredits + availableSubCredits;
   
   // Check if there are enough credits total
   if (totalCredits < amount) {

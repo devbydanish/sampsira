@@ -9,7 +9,10 @@ import {
     RiCustomerServiceLine,
     RiCoinsLine,
     RiMusicLine,
-    RiPriceTag3Line
+    RiPriceTag3Line,
+    RiTimer2Line,
+    RiFileMusicLine,
+    RiMoneyDollarCircleLine
 } from '@remixicon/react';
 import { useTranslations } from 'next-intl';
 import { loadStripe } from '@stripe/stripe-js';
@@ -20,6 +23,7 @@ import { useAuthentication } from '@/core/contexts/authentication';
 
 // Utils
 import { getStripeErrorMessage } from '@/utils/stripe-helpers';
+import { initiatePurchase } from '@/utils/purchase';
 
 // Utilities
 import type { Plan, PlanTypes } from '@/core/types/pricing';
@@ -48,6 +52,10 @@ const FeatureIcon: React.FC<FeatureIconProps> = ({ iconName }) => {
         'credits': <RiCoinsLine {...iconProps} />,
         'samples': <RiMusicLine {...iconProps} />,
         'license': <RiPriceTag3Line {...iconProps} />,
+        'timer': <RiTimer2Line {...iconProps} />,
+        'file': <RiFileMusicLine {...iconProps} />,
+        'coin': <RiMoneyDollarCircleLine {...iconProps} />,
+
     };
 
     return iconMap[iconName as keyof typeof iconMap] || <RiDownloadLine {...iconProps} />;
@@ -56,7 +64,8 @@ const FeatureIcon: React.FC<FeatureIconProps> = ({ iconName }) => {
 const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: boolean) => void; onManage: () => void}> = ({ plan, onPurchase, onManage }) => {
     const pricing = useTranslations('pricing');
     const { currentUser } = useAuthentication();
-    const isSubscription = plan.id === 'monthly-subscription';
+    const isSubscription = plan.id === 'monthly-subscription' || plan.id === 'yearly-subscription';
+    const isYearly = plan.id === 'yearly-subscription';
     const hasActiveSubscription = currentUser?.isSubscribed && currentUser?.subscriptionStatus === 'active';
 
     return (
@@ -69,11 +78,15 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
                         <RiCoinsLine size={40} className="text-primary mb-3" />
                     }
                     <h3 className='plan-title text-black mb-2 fw-bold' dangerouslySetInnerHTML={{ __html: plan.name }} />
-                    <p className='text-muted mb-4'>{isSubscription ? pricing('unlimited_access') : pricing('pay_as_you_go')}</p>
+                    <p className='text-muted mb-4'>
+                        {isYearly ? pricing('yearly_access') : isSubscription ? pricing('monthly_access') : pricing('pay_as_you_go')}
+                    </p>
                     
                     <div className='price-tag mb-4 pb-2 border-bottom'>
-                        <span className='amount display-5 fw-bold'>${plan.price}</span>
-                        {isSubscription && <span className='period text-muted ms-2'>/{pricing('month')}</span>}
+                        <span className='amount display-5 fw-bold'>${Math.floor(plan.price)}</span>
+                        {isSubscription && (
+                            <span className='period text-muted ms-2'>/{isYearly ? pricing('year') : pricing('month')}</span>
+                        )}
                     </div>
                 </div>
 
@@ -92,12 +105,12 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
                         className='btn btn-outline-primary w-100 py-3'
                         onClick={onManage}
                     >
-                        {pricing('manage')}
+                        {pricing('subscribe')}
                     </button>
                 ) : (
                     <button
                         type='button'
-                        className='btn btn-primary w-100 py-3'
+                        className='btn btn-primary w-100 py-3 text-white'
                         onClick={() => onPurchase(plan.stripeProductId, isSubscription)}
                     >
                         {isSubscription ? pricing('subscribe') : pricing('buyCredits')}
@@ -110,6 +123,7 @@ const PlanCard: React.FC<{plan: Plan; onPurchase: (id: string, isSubscription: b
 
 const Pricing: React.FC<Props> = ({data}) => {
     const pricing = useTranslations('pricing');
+    const header = useTranslations('header');
     const { currentUser } = useAuthentication();
 
     const handleManageSubscription = async () => {
@@ -138,79 +152,79 @@ const Pricing: React.FC<Props> = ({data}) => {
     };
 
     const handlePurchase = async (stripeProductId: string, isSubscription: boolean = false) => {
-        console.log('stripeProductId', stripeProductId);
-        console.log('isSubscription', isSubscription);
-        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-        if (!stripe) {
-            console.error('Failed to load Stripe');
-            alert('Payment system is currently unavailable. Please try again later.');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-                },
-                body: JSON.stringify({
-                    priceId: stripeProductId,
-                    isSubscription,
-                    mode: isSubscription ? 'subscription' : 'payment'
-                }),
-            });
-            
-            const session = await response.json();
-            if (session.error) {
-                console.error('Session Error:', session.error);
-                const userMessage = session.error.includes('Authentication') 
-                    ? 'Please log in to continue with your purchase.'
-                    : 'Unable to create payment session. Please try again.';
-                alert(userMessage);
-                return;
-            }
+        await initiatePurchase(stripeProductId, isSubscription, localStorage.getItem('jwt') || undefined);
+    };
 
-            const result = await stripe.redirectToCheckout({
-                sessionId: session.id,
-            });
-            
-            if (result.error) {
-                console.error('Stripe Error:', result.error);
-                const errorMessage = result.error.code 
-                    ? getStripeErrorMessage(result.error.code)
-                    : 'Payment failed. Please try again.';
-                alert(errorMessage);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An unexpected error occurred. Please try again.');
-        }
+    // Create a yearly plan based on the monthly subscription plan but with its own features
+    const createYearlyPlan = (monthlyPlan: Plan): Plan | null => {
+        if (!monthlyPlan) return null;
+        
+        // Calculate yearly price (monthly price * 10 to give a 2-month discount)
+        const monthlyPrice = monthlyPlan.price;
+        const yearlyPrice = monthlyPrice * 10;
+        
+        // Create custom features for the yearly plan
+        const yearlyFeatures = [
+            {
+                id: 'yearly-credits',
+                name: '600 credits',
+                icon: 'credits'
+            },
+            {
+                id: 'everything-monthly',
+                name: 'Everything on the Monthly Plan',
+                icon: 'vip'
+            },
+            // Add any additional yearly-specific features here
+        ];
+        
+        return {
+            ...monthlyPlan,
+            id: 'yearly-subscription',
+            name: monthlyPlan.name.replace('Monthly', 'Yearly'),
+            price: yearlyPrice,
+            features: yearlyFeatures,
+            // Using the specific yearly subscription product ID
+            stripeProductId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_YEARLY_SUBSCRIPTION || ''
+        };
     };
 
     const subscriptionPlans = data.filter(plan => plan.id === 'monthly-subscription');
+    const yearlyPlan = createYearlyPlan(subscriptionPlans[0]);
     const creditPlans = data.filter(plan => typeof plan.id === 'string' && plan.id.startsWith('credits-'));
 
     return (
         <div className='plan py-5'>
             <div className='container-lg'>
                 <div className='text-center mb-5'>
-                    <h2 className='h1 mb-3'>{pricing('plan_subtitle')}</h2>
-                    <p className='text-muted fs-5'>{pricing('pay_as_you_go')}</p>
+                    <h2 className='h1 mb-3'>{header('pricing')}</h2>
+                    <p className='text-muted fs-5'>{pricing('plan_subtitle')}</p>
                 </div>
                 <div className='row justify-content-center align-items-stretch g-5'>
-                    <div className='col-12 col-lg-6'>
-                        {subscriptionPlans.map(plan => (
-                            <PlanCard 
-                                key={plan.id} 
-                                plan={plan} 
-                                onPurchase={handlePurchase}
-                                onManage={handleManageSubscription}
-                            />
-                        ))}
-                    </div>
+                    {subscriptionPlans.length > 0 && (
+                        <>
+                            <div className='col-12 col-lg-6'>
+                                <PlanCard 
+                                    key={subscriptionPlans[0].id} 
+                                    plan={subscriptionPlans[0]} 
+                                    onPurchase={handlePurchase}
+                                    onManage={handleManageSubscription}
+                                />
+                            </div>
+                            {yearlyPlan && (
+                                <div className='col-12 col-lg-6'>
+                                    <PlanCard 
+                                        key={yearlyPlan.id} 
+                                        plan={yearlyPlan} 
+                                        onPurchase={handlePurchase}
+                                        onManage={handleManageSubscription}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
 
-                    <div className='col-12 col-lg-6'>
+                    {/* <div className='col-12 col-lg-6'>
                         {creditPlans.map(plan => (
                             <PlanCard 
                                 key={plan.id} 
@@ -219,7 +233,7 @@ const Pricing: React.FC<Props> = ({data}) => {
                                 onManage={handleManageSubscription}
                             />
                         ))}
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

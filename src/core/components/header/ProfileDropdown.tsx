@@ -78,7 +78,7 @@ const ProfileDropdown: React.FC = () => {
                 >
                     <div className='avatar__image'>
                         <Image
-                            src={currentUser.cover || "/images/users/default.png"}
+                            src={currentUser.cover || "/images/users/default.jpg"}
                             width={128}
                             height={128}
                             alt={currentUser.username || 'User'}

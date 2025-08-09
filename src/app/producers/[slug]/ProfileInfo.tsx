@@ -26,7 +26,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ producer }) => {
                 <div className='avatar avatar--xl me-4'>
                     <div className='avatar__image'>
                         <Image
-                            src={producer.cover || "/images/users/default.png"}
+                            src={producer.cover || "/images/users/default.jpg"}
                             alt="Profile"
                             width={160}
                             height={160}

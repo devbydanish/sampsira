@@ -3,926 +3,1133 @@
  * @file form.tsx
  * @description profile form component with tabbed interface
  */
-"use client"
+"use client";
 
 // Modules
-import React, { useState, useEffect } from 'react'
-import classNames from 'classnames'
-import { useForm } from 'react-hook-form'
-import Image from 'next/image'
-import { useTranslations } from 'next-intl'
-import { RiInstagramLine, RiFacebookCircleLine, RiYoutubeLine, RiTiktokLine, RiAlertLine } from '@remixicon/react'
+import Tab from "@/core/components/tab";
+import { initiatePurchase } from "@/utils/purchase";
+import Section from "@/view/layout/section";
+import { RiAlertLine, RiCoinsLine, RiVipCrownLine } from "@remixicon/react";
+import classNames from "classnames";
+import { useTranslations } from "next-intl";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 // Contexts
-import { useTheme } from '@/core/contexts/theme'
-import { useAuthentication } from '@/core/contexts/authentication'
+import { useAuthentication } from "@/core/contexts/authentication";
+import { useTheme } from "@/core/contexts/theme";
 
 // Components
-import Input from '@/core/components/input'
-import ErrorHandler from '@/core/components/error'
-import UserUploads from './uploads'
-
+import ErrorHandler from "@/core/components/error";
+import Input from "@/core/components/input";
+import UserUploads from "./uploads";
 
 // Utilities
-import { ProfileTypes, SocialMediaAccountType } from '@/core/types'
+import { ProfileTypes, SocialMediaAccountType } from "@/core/types";
 
 const ProfileForm: React.FC = () => {
-    const { replaceClassName } = useTheme()
-    const { currentUser } = useAuthentication()
-    const locale = useTranslations()
-    type ActiveTab = 'Edit Profile' | 'Account Security' | 'Subscription Plan' | 'Delete Account' | 'My Uploads';
-    const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-        if (typeof window !== 'undefined') {
-            const storedTab = localStorage.getItem('settingsTab')
-            if (storedTab === 'My Uploads') {
-                localStorage.removeItem('settingsTab')
-                return storedTab as ActiveTab
-            }
-        }
-        return 'Edit Profile'
-    })
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [deleteConfirmation, setDeleteConfirmation] = useState('')
-    const [isEditing, setIsEditing] = useState(false)
-    const [socialAccounts, setSocialAccounts] = useState<{[key: string]: SocialMediaAccountType}>({
-        instagram: { platform: 'instagram', connected: false, username: '', profileUrl: '' },
-        facebook: { platform: 'facebook', connected: false, username: '', profileUrl: '' },
-        youtube: { platform: 'youtube', connected: false, username: '', profileUrl: '' },
-        tiktok: { platform: 'tiktok', connected: false, username: '', profileUrl: '' }
-    })
-    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-    const [previewImage, setPreviewImage] = useState<string>(currentUser?.img ? process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url : '/images/users/default.png');
-    const [formStatus, setFormStatus] = useState<{success?: boolean; message?: string} | null>(null);
+  const { replaceClassName } = useTheme();
+  const { currentUser } = useAuthentication();
+  const locale = useTranslations();
+  type ActiveTab =
+    | "Edit Profile"
+    | "Account Security"
+    | "Subscription Plan"
+    | "Delete Account"
+    | "My Samples"
+    | "Purchase History";
+  const [activeTab, setActiveTab] = useState<ActiveTab>("Edit Profile");
 
-    // State for subscription information
-    const [subscriptionInfo, setSubscriptionInfo] = useState<{
-        status: string;
-        plan: string;
-        startDate: string;
-        nextBillingDate: string;
-        amount: number;
-    } | null>(null);
-    const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [purchaseHistoryTab, setPurchaseHistoryTab] = useState("samples");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [purchasedSamples, setPurchasedSamples] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [socialAccounts, setSocialAccounts] = useState<{
+    [key: string]: SocialMediaAccountType;
+  }>({
+    instagram: {
+      platform: "instagram",
+      connected: false,
+      username: "",
+      profileUrl: "",
+    },
+    facebook: {
+      platform: "facebook",
+      connected: false,
+      username: "",
+      profileUrl: "",
+    },
+    youtube: {
+      platform: "youtube",
+      connected: false,
+      username: "",
+      profileUrl: "",
+    },
+    tiktok: {
+      platform: "tiktok",
+      connected: false,
+      username: "",
+      profileUrl: "",
+    },
+  });
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string>(
+    currentUser?.img
+      ? process.env.NEXT_PUBLIC_STRAPI_URL + currentUser?.img?.url
+      : "/images/users/default.jpg"
+  );
+  const [formStatus, setFormStatus] = useState<{
+    success?: boolean;
+    message?: string;
+  } | null>(null);
 
-    // Initialize social accounts from currentUser if available
-    useEffect(() => {
-        if (currentUser?.socialAccounts) {
-            setSocialAccounts(prevAccounts => ({
-                ...prevAccounts,
-                ...currentUser?.socialAccounts
-            }));
-        }
-    }, [currentUser]);
+  // State for subscription information
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    status: string;
+    plan: string;
+    startDate: string;
+    nextBillingDate: string;
+    amount: number;
+  } | null>(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
 
-    const handleDeleteAccount = async () => {
-        setIsDeleting(true);
+  // Set Subscription Plan tab active if redirected from /plan
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedTab = localStorage.getItem("settingsTab");
+      if (
+        storedTab &&
+        [
+          "Edit Profile",
+          "Account Security",
+          "Subscription Plan",
+          "Delete Account",
+          "My Samples",
+          "Purchase History",
+        ].includes(storedTab)
+      ) {
+        setActiveTab(storedTab as ActiveTab);
+        localStorage.removeItem("settingsTab");
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("tab") === "subscription") {
+        setActiveTab("Subscription Plan");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchPurchaseHistory = async () => {
+      if (activeTab === "Purchase History") {
         try {
-            if (!currentUser) {
-                console.error('No user logged in');
-                return;
-            }
-    
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/users/request-deletion`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    userId: currentUser.id,
-                    email: currentUser.email,
-                    currentBalance: currentUser.balance,
-                }),
+          const response = await fetch("/api/purchases", {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+            },
+          });
+
+          if (response.ok) {
+            const dataRes = await response.json();
+            const data = dataRes.data.map((item: any) => {
+              return {
+                ...item.attributes,
+                id: item.id,
+              };
             });
-    
-            if (response.ok) {
-                setFormStatus({
-                    success: true,
-                    message: "A confirmation email has been sent. Check your inbox to proceed."
-                });
-                setShowDeleteModal(false);
-                setDeleteConfirmation('');
-            } else {
-                const errorData = await response.json();
-                console.error('Error requesting deletion:', errorData.message || 'Unknown error');
-                setFormStatus({
-                    success: false,
-                    message: 'Failed to send confirmation email. Please try again.'
-                });
-            }
+            console.log("data", data);
+
+            setTransactions(data);
+            console.log("data", data);
+            setPurchasedSamples(
+              data
+                .filter((t: any) => t.type === "purchase")
+                .map((t: any) => ({
+                  ...t,
+                  title: "Sample: " + t.track.data?.attributes.title,
+                  cover: t.track.data?.attributes.cover.data.attributes.url
+                    ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${t.track.data?.attributes.cover.data.attributes.url}`
+                    : "/images/cover/default.jpg",
+                }))
+            );
+          }
         } catch (error) {
-            console.error('Network error:', error);
-            setFormStatus({
-                success: false,
-                message: 'Network error. Please check your connection and try again.'
-            });
-        } finally {
-            setIsDeleting(false);
+          console.error("Error fetching purchase history:", error);
         }
+      }
     };
 
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        reset,
-        formState: { errors }
-    } = useForm<ProfileTypes>({
-        defaultValues: {
-            image: currentUser?.img || '/images/users/default.png',
-            firstName: currentUser?.firstName || '',
-            lastName: currentUser?.lastName || '',
-            displayName: currentUser?.displayName || '',
-            username: currentUser?.username || '',
-            bio: currentUser?.bio || '',
+    fetchPurchaseHistory();
+  }, [activeTab]);
+  // Initialize social accounts from currentUser if available
+  useEffect(() => {
+    if (currentUser?.socialAccounts) {
+      setSocialAccounts((prevAccounts) => ({
+        ...prevAccounts,
+        ...currentUser?.socialAccounts,
+      }));
+    }
+  }, [currentUser]);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      if (!currentUser) {
+        console.error("No user logged in");
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/request-deletion`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            email: currentUser.email,
+            currentBalance: currentUser.balance,
+          }),
         }
-    })
+      );
 
-    // Effect to update form when currentUser changes
-    // useEffect(() => {
-    //     if (currentUser) {
-    //         reset({
-    //             image: currentUser?.cover || '/images/users/default.png',
-    //             firstName: currentUser?.firstName || '',
-    //             lastName: currentUser?.lastName || '',
-    //             displayName: currentUser?.displayName || '',
-    //             username: currentUser?.username || '',
-    //             bio: currentUser?.bio || '',
-    //         });
-    //     }
-    // }, [currentUser, reset]);
-
-    const handleCancel = () => {
-        reset({
-            image: currentUser?.cover || '/images/users/default.png',
-            firstName: currentUser?.firstName || '',
-            lastName: currentUser?.lastName || '',
-            displayName: currentUser?.displayName || '',
-            username: currentUser?.username || '',
-            bio: currentUser?.bio || '',
+      if (response.ok) {
+        setFormStatus({
+          success: true,
+          message:
+            "A confirmation email has been sent. Check your inbox to proceed.",
         });
+        setShowDeleteModal(false);
+        setDeleteConfirmation("");
+      } else {
+        const errorData = await response.json();
+        console.error(
+          "Error requesting deletion:",
+          errorData.message || "Unknown error"
+        );
+        setFormStatus({
+          success: false,
+          message: "Failed to send confirmation email. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      setFormStatus({
+        success: false,
+        message: "Network error. Please check your connection and try again.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    reset,
+    formState: { errors },
+  } = useForm<ProfileTypes>({
+    defaultValues: {
+      image: currentUser?.img || "/images/users/default.jpg",
+      firstName: currentUser?.firstName || "",
+      lastName: currentUser?.lastName || "",
+      displayName: currentUser?.displayName || "",
+      username: currentUser?.username || "",
+      bio: currentUser?.bio || "",
+    },
+  });
+
+  // Effect to update form when currentUser changes
+  // useEffect(() => {
+  //     if (currentUser) {
+  //         reset({
+  //             image: currentUser?.cover || '/images/users/default.png',
+  //             firstName: currentUser?.firstName || '',
+  //             lastName: currentUser?.lastName || '',
+  //             displayName: currentUser?.displayName || '',
+  //             username: currentUser?.username || '',
+  //             bio: currentUser?.bio || '',
+  //         });
+  //     }
+  // }, [currentUser, reset]);
+
+  const handleCancel = () => {
+    reset({
+      image: currentUser?.cover || "/images/users/default.jpg",
+      firstName: currentUser?.firstName || "",
+      lastName: currentUser?.lastName || "",
+      displayName: currentUser?.displayName || "",
+      username: currentUser?.username || "",
+      bio: currentUser?.bio || "",
+    });
+    setIsEditing(false);
+    setFormStatus(null);
+  };
+
+  // Update form values when editing mode changes
+  useEffect(() => {
+    if (!isEditing) {
+      reset({
+        image: currentUser?.cover || "/images/users/default.jpg",
+        firstName: currentUser?.firstName || "",
+        lastName: currentUser?.lastName || "",
+        displayName: currentUser?.displayName || "",
+        username: currentUser?.username || "",
+        bio: currentUser?.bio || "",
+      });
+    }
+  }, [isEditing, currentUser, reset]);
+
+  // Define all possible tabs
+  const allTabs: Array<{
+    id: string;
+    name: ActiveTab;
+    producerOnly?: boolean;
+  }> = [
+    { id: "edit_profile", name: "Edit Profile" },
+    { id: "uploads", name: "My Samples", producerOnly: true },
+    { id: "subscription_plan", name: "Subscription Plan" },
+    { id: "purchases", name: "Purchase History" },
+    { id: "account_security", name: "Account Security" },
+    { id: "delete_account", name: "Delete Account" },
+  ];
+
+  // Filter tabs based on user role
+  const tabs = allTabs.filter((tab) => {
+    if (!tab.producerOnly) {
+      return true;
+    }
+    return currentUser?.isProducer === true;
+  });
+
+  const handleTabClick = (tabName: ActiveTab) => {
+    setActiveTab(tabName);
+    setFormStatus(null);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteConfirmation("");
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("files", file);
+
+      const uploadResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const uploadData = await uploadResponse.json();
+      return uploadData[0].id; // Return the URL of the uploaded image
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
+    }
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedImage(file);
+      // Create a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewImage(previewUrl);
+    }
+  };
+
+  const submitForm = async (data: ProfileTypes) => {
+    try {
+      setFormStatus(null);
+
+      if (currentUser) {
+        let imageUrl;
+
+        // If there's a new image uploaded, process it first
+        if (uploadedImage) {
+          imageUrl = await handleImageUpload(uploadedImage);
+        }
+
+        console.log("Submitting profile update:", { ...data, image: imageUrl });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              firstName: data.firstName,
+              lastName: data.lastName,
+              username: data.username,
+              displayName: data.displayName,
+              bio: data.bio,
+              img: imageUrl,
+            }),
+          }
+        );
+
+        const responseData = await response.json();
+        console.log("Response:", responseData);
+
+        if (!response.ok) {
+          throw new Error(responseData.message || "Failed to update profile");
+        }
+
+        // Update localStorage
+        const updatedUser = {
+          ...currentUser,
+          ...responseData,
+        };
+
+        localStorage.setItem("user", JSON.stringify(updatedUser));
         setIsEditing(false);
-        setFormStatus(null);
+        setUploadedImage(null);
+        reset({
+          firstName: responseData.firstName || "",
+          lastName: responseData.lastName || "",
+          displayName: responseData.displayName || "",
+          username: responseData.username || "",
+          bio: responseData.bio || "",
+        });
+
+        setFormStatus({
+          success: true,
+          message: "Profile updated successfully!",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+
+      if (error instanceof Error) {
+        setFormStatus({
+          success: false,
+          message:
+            error.message || "Failed to update profile. Please try again.",
+        });
+      } else {
+        setFormStatus({
+          success: false,
+          message: "Failed to update profile. Please try again.",
+        });
+      }
     }
+  };
 
-    // Update form values when editing mode changes
-    useEffect(() => {
-        if (!isEditing) {
-            reset({
-                image: currentUser?.cover || '/images/users/default.png',
-                firstName: currentUser?.firstName || '',
-                lastName: currentUser?.lastName || '',
-                displayName: currentUser?.displayName || '',
-                username: currentUser?.username || '',
-                bio: currentUser?.bio || '',
-            });
+  const handleSocialConnect = async (
+    platform: "instagram" | "facebook" | "youtube" | "tiktok",
+    username: string,
+    profileUrl: string
+  ) => {
+    try {
+      setFormStatus(null);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/connect-social`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${currentUser?.jwt}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            platform,
+            username,
+            profileUrl,
+          }),
         }
-    }, [isEditing, currentUser, reset]);
+      );
 
-    const tabs: Array<{ id: string, name: ActiveTab }> = [
-        { id: 'edit_profile', name: 'Edit Profile' },
-        { id: 'uploads', name: 'My Uploads' }, // Renamed and moved below Edit Profile
-        { id: 'account_security', name: 'Account Security' },
-        { id: 'subscription_plan', name: 'Subscription Plan' },
-        { id: 'delete_account', name: 'Delete Account' },
-    ]
-
-    const handleTabClick = (tabName: ActiveTab) => {
-        setActiveTab(tabName);
-        setFormStatus(null);
-    }
-
-    const closeDeleteModal = () => {
-        setShowDeleteModal(false)
-        setDeleteConfirmation('')
-    }
-
-    const handleImageUpload = async (file: File) => {
-        try {
-            const formData = new FormData();
-            formData.append('files', file);
-
-            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/upload`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-                },
-                body: formData,
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error('Failed to upload image');
-            }
-
-            const uploadData = await uploadResponse.json();
-            return uploadData[0].id; // Return the URL of the uploaded image
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            throw error;
-        }
-    };
-
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setUploadedImage(file);
-            // Create a preview URL for the selected image
-            const previewUrl = URL.createObjectURL(file);
-            setPreviewImage(previewUrl);
-        }
-    };
-
-    const submitForm = async (data: ProfileTypes) => {
-        try {
-            setFormStatus(null);
-            
-            if (currentUser) {
-                let imageUrl;
-
-                // If there's a new image uploaded, process it first
-                if (uploadedImage) {
-                    imageUrl = await handleImageUpload(uploadedImage);
-                }
-
-                console.log('Submitting profile update:', { ...data, image: imageUrl });
-                const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        username: data.username,
-                        displayName: data.displayName,
-                        bio: data.bio,
-                        img: imageUrl
-                    }),
-                });
-    
-                const responseData = await response.json();
-                console.log('Response:', responseData);
-    
-                if (!response.ok) {
-                    throw new Error(responseData.message || 'Failed to update profile');
-                }
-    
-                // Update localStorage
-                const updatedUser = {
-                    ...currentUser,
-                    ...responseData
-                };
-                
-                localStorage.setItem("user", JSON.stringify(updatedUser));
-                setIsEditing(false);
-                setUploadedImage(null);
-                reset({
-                    firstName: responseData.firstName || '',
-                    lastName: responseData.lastName || '',
-                    displayName: responseData.displayName || '',
-                    username: responseData.username || '',
-                    bio: responseData.bio || '',
-                });
-                
-                setFormStatus({
-                    success: true,
-                    message: 'Profile updated successfully!'
-                });
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            
-            if (error instanceof Error) {
-                setFormStatus({
-                    success: false,
-                    message: error.message || 'Failed to update profile. Please try again.'
-                });
-            } else {
-                setFormStatus({
-                    success: false,
-                    message: 'Failed to update profile. Please try again.'
-                });
-            }
-        }
-    };
-
-    const handleSocialConnect = async (platform: 'instagram' | 'facebook' | 'youtube' | 'tiktok', username: string, profileUrl: string) => {
-        try {
-            setFormStatus(null);
-            
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/connect-social`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${currentUser?.jwt}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        platform,
-                        username,
-                        profileUrl,
-                    }),
-                }
-            );
-        
-            if (response.ok) {
-                // Update local state
-                const updatedSocialAccounts = {
-                    ...socialAccounts,
-                    [platform]: {
-                        platform,
-                        connected: true,
-                        username,
-                        profileUrl
-                    }
-                };
-                
-                setSocialAccounts(updatedSocialAccounts);
-                
-                // Update currentUser in localStorage to persist the change
-                if (currentUser) {
-                    const updatedUser = {
-                        ...currentUser,
-                        socialAccounts: {
-                            ...(currentUser.socialAccounts || {}),
-                            [platform]: {
-                                platform,
-                                connected: true,
-                                username,
-                                profileUrl
-                            }
-                        }
-                    };
-                    
-                    localStorage.setItem("user", JSON.stringify(updatedUser));
-                }
-                
-                setFormStatus({
-                    success: true,
-                    message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`
-                });
-            }
-        } catch (error) {
-            console.error(`Error connecting ${platform}:`, error);
-            setFormStatus({
-                success: false,
-                message: `Failed to connect ${platform}. Please try again.`
-            });
-        }
-    };
-
-    const handleSocialLink = async (platform: 'instagram' | 'facebook' | 'youtube' | 'tiktok') => {
-        const config = {
-            instagram: {
-            clientId: process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID,
-            redirectUri: process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI,
-            scope: 'instagram_basic,email'
-            },
-            facebook: {
-            clientId: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
-            redirectUri: `${window.location.origin}/auth/facebook/callback`,
-            scope: 'public_profile,email'
-            },
-            youtube: {
-            clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID,
-            redirectUri: `${window.location.origin}/auth/youtube/callback`,
-            scope: 'https://www.googleapis.com/auth/youtube.readonly'
-            },
-            tiktok: {
-            clientId: process.env.NEXT_PUBLIC_TIKTOK_CLIENT_ID,
-            redirectUri: `${window.location.origin}/auth/tiktok/callback`,
-            scope: 'user.info.basic'
-            }
+      if (response.ok) {
+        // Update local state
+        const updatedSocialAccounts = {
+          ...socialAccounts,
+          [platform]: {
+            platform,
+            connected: true,
+            username,
+            profileUrl,
+          },
         };
-        
-        if (!socialAccounts[platform].connected) {
-            const { clientId, redirectUri, scope } = config[platform];
-            const state = Math.random().toString(36).substring(7);
-            
-            localStorage.setItem('oauth_state', state);
-            localStorage.setItem('oauth_platform', platform);
-        
-            if (!clientId || !redirectUri) {
-                console.error('Missing OAuth configuration for', platform);
-                alert(`OAuth configuration missing for ${platform}. Please check your environment variables.`);
-                return;
-            }
 
-            const authUrl = platform === 'instagram'
-                ? `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`
-                : platform === 'facebook'
-                ? `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`
-                : platform === 'youtube'
-                ? `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`
-                : `https://www.tiktok.com/auth/authorize?client_key=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
-        
-            window.location.href = authUrl;
+        setSocialAccounts(updatedSocialAccounts);
+
+        // Update currentUser in localStorage to persist the change
+        if (currentUser) {
+          const updatedUser = {
+            ...currentUser,
+            socialAccounts: {
+              ...(currentUser.socialAccounts || {}),
+              [platform]: {
+                platform,
+                connected: true,
+                username,
+                profileUrl,
+              },
+            },
+          };
+
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+
+        setFormStatus({
+          success: true,
+          message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} connected successfully!`,
+        });
+      }
+    } catch (error) {
+      console.error(`Error connecting ${platform}:`, error);
+      setFormStatus({
+        success: false,
+        message: `Failed to connect ${platform}. Please try again.`,
+      });
+    }
+  };
+
+  const handleSocialLink = async (
+    platform: "instagram" | "facebook" | "youtube" | "tiktok"
+  ) => {
+    const config = {
+      instagram: {
+        clientId: process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID,
+        redirectUri: process.env.NEXT_PUBLIC_INSTAGRAM_REDIRECT_URI,
+        scope: "instagram_basic,email",
+      },
+      facebook: {
+        clientId: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
+        redirectUri: `${window.location.origin}/auth/facebook/callback`,
+        scope: "public_profile,email",
+      },
+      youtube: {
+        clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID,
+        redirectUri: `${window.location.origin}/auth/youtube/callback`,
+        scope: "https://www.googleapis.com/auth/youtube.readonly",
+      },
+      tiktok: {
+        clientId: process.env.NEXT_PUBLIC_TIKTOK_CLIENT_ID,
+        redirectUri: `${window.location.origin}/auth/tiktok/callback`,
+        scope: "user.info.basic",
+      },
+    };
+
+    if (!socialAccounts[platform].connected) {
+      const { clientId, redirectUri, scope } = config[platform];
+      const state = Math.random().toString(36).substring(7);
+
+      localStorage.setItem("oauth_state", state);
+      localStorage.setItem("oauth_platform", platform);
+
+      if (!clientId || !redirectUri) {
+        console.error("Missing OAuth configuration for", platform);
+        alert(
+          `OAuth configuration missing for ${platform}. Please check your environment variables.`
+        );
+        return;
+      }
+
+      const authUrl =
+        platform === "instagram"
+          ? `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`
+          : platform === "facebook"
+            ? `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`
+            : platform === "youtube"
+              ? `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`
+              : `https://www.tiktok.com/auth/authorize?client_key=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+
+      window.location.href = authUrl;
+    } else {
+      // Handle unlinking
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/disconnect-social`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${currentUser?.jwt}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ platform }),
+          }
+        );
+
+        if (response.ok) {
+          // Update local state
+          const updatedSocialAccounts = {
+            ...socialAccounts,
+            [platform]: {
+              platform,
+              connected: false,
+              username: "",
+              profileUrl: "",
+            },
+          };
+
+          setSocialAccounts(updatedSocialAccounts);
+
+          // Update user in localStorage
+          if (currentUser && currentUser.socialAccounts) {
+            const updatedUser = {
+              ...currentUser,
+              socialAccounts: {
+                ...currentUser.socialAccounts,
+                [platform]: {
+                  platform,
+                  connected: false,
+                  username: "",
+                  profileUrl: "",
+                },
+              },
+            };
+
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+          }
+
+          setFormStatus({
+            success: true,
+            message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} disconnected successfully!`,
+          });
+        }
+      } catch (error) {
+        console.error(`Error disconnecting ${platform}:`, error);
+        setFormStatus({
+          success: false,
+          message: `Failed to disconnect ${platform}. Please try again.`,
+        });
+      }
+    }
+  };
+
+  const sendEmailConfirmation = async (newEmail: string) => {
+    try {
+      if (!currentUser) {
+        console.error("No user logged in");
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/send-email-confirmation`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            newEmail,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setFormStatus({
+          success: true,
+          message:
+            "A confirmation email has been sent to your new email address. Please check your inbox.",
+        });
+      } else {
+        const errorData = await response.json();
+        console.error(
+          "Error sending confirmation email:",
+          errorData.message || "Unknown error"
+        );
+        setFormStatus({
+          success: false,
+          message: "Failed to send confirmation email. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      setFormStatus({
+        success: false,
+        message: "Network error. Please check your connection and try again.",
+      });
+    }
+  };
+
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const validatePassword = (
+    password: string,
+    confirmation: string
+  ): string | null => {
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long";
+    }
+    if (password !== confirmation) {
+      return "Passwords do not match";
+    }
+    return null;
+  };
+
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+    form: HTMLFormElement
+  ) => {
+    const error = validatePassword(newPassword, confirmPassword);
+    if (error) {
+      setPasswordError(error);
+      return;
+    }
+    setPasswordError("");
+    setIsSubmitting(true);
+    try {
+      if (!currentUser) {
+        console.error("No user logged in");
+        setFormStatus({
+          success: false,
+          message: "You must be logged in to change your password.",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/change-password`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            password: newPassword,
+            passwordConfirmation: confirmPassword,
+            currentPassword: currentPassword,
+          }),
+        }
+      );
+
+      // Debug logging
+      console.log("Change password request:", {
+        url: `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/change-password`,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${currentUser?.jwt}`,
+          "Content-Type": "application/json",
+        },
+        body: {
+          currentPassword: "[REDACTED]",
+          password: "[REDACTED]",
+          confirmPassword: "[REDACTED]",
+          identifier: currentUser?.email,
+        },
+      });
+
+      if (!currentUser?.email || !currentUser?.jwt) {
+        setFormStatus({
+          success: false,
+          message: "User credentials are missing. Please try logging in again.",
+        });
+        return;
+      }
+
+      try {
+        const responseData = await response.json();
+        if (response.ok) {
+          setPasswordError("");
+          setFormStatus({
+            success: true,
+            message: "Password changed successfully!",
+          });
+          form.reset();
         } else {
-            // Handle unlinking
-            try {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_STRAPI_URL}/users/disconnect-social`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${currentUser?.jwt}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ platform }),
-                    }
-                );
-                
-                if (response.ok) {
-                    // Update local state
-                    const updatedSocialAccounts = {
-                        ...socialAccounts,
-                        [platform]: { 
-                            platform,
-                            connected: false, 
-                            username: '', 
-                            profileUrl: '' 
-                        }
-                    };
-                    
-                    setSocialAccounts(updatedSocialAccounts);
-                    
-                    // Update user in localStorage
-                    if (currentUser && currentUser.socialAccounts) {
-                        const updatedUser = {
-                            ...currentUser,
-                            socialAccounts: {
-                                ...currentUser.socialAccounts,
-                                [platform]: {
-                                    platform,
-                                    connected: false,
-                                    username: '',
-                                    profileUrl: ''
-                                }
-                            }
-                        };
-                        
-                        localStorage.setItem("user", JSON.stringify(updatedUser));
-                    }
-                    
-                    setFormStatus({
-                        success: true,
-                        message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} disconnected successfully!`
-                    });
-                }
-            } catch (error) {
-                console.error(`Error disconnecting ${platform}:`, error);
-                setFormStatus({
-                    success: false,
-                    message: `Failed to disconnect ${platform}. Please try again.`
-                });
-            }
-        }
-    };
-
-    const sendEmailConfirmation = async (newEmail: string) => {
-        try {
-            if (!currentUser) {
-                console.error('No user logged in');
-                return;
-            }
-    
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/users/send-email-confirmation`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId: currentUser.id,
-                    newEmail,
-                }),
-            });
-    
-            if (response.ok) {
-                setFormStatus({
-                    success: true,
-                    message: 'A confirmation email has been sent to your new email address. Please check your inbox.'
-                });
-            } else {
-                const errorData = await response.json();
-                console.error('Error sending confirmation email:', errorData.message || 'Unknown error');
-                setFormStatus({
-                    success: false,
-                    message: 'Failed to send confirmation email. Please try again.'
-                });
-            }
-        } catch (error) {
-            console.error('Network error:', error);
-            setFormStatus({
-                success: false,
-                message: 'Network error. Please check your connection and try again.'
-            });
-        }
-    };
-
-    const [passwordError, setPasswordError] = useState<string>('');
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-    const validatePassword = (password: string, confirmation: string): string | null => {
-        if (password.length < 6) {
-            return 'Password must be at least 6 characters long';
-        }
-        if (password !== confirmation) {
-            return 'Passwords do not match';
-        }
-        return null;
-    };
-
-    const changePassword = async (currentPassword: string, newPassword: string, confirmPassword: string, form: HTMLFormElement) => {
-        const error = validatePassword(newPassword, confirmPassword);
-        if (error) {
-            setPasswordError(error);
-            return;
-        }
-        setPasswordError('');
-        setIsSubmitting(true);
-        try {
-            if (!currentUser) {
-                console.error('No user logged in');
-                setFormStatus({
-                    success: false,
-                    message: 'You must be logged in to change your password.'
-                });
-                return;
-            }
-    
-            const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${currentUser?.jwt}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    password: newPassword,
-                    confirmPassword: newPassword,
-                    currentPassword: currentPassword,
-                    identifier: currentUser?.email
-                }),
-            });
-    
-            // Debug logging
-            console.log('Change password request:', {
-                url: `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/auth/change-password`,
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${currentUser?.jwt}`,
-                    'Content-Type': 'application/json'
-                },
-                body: {
-                    currentPassword: '[REDACTED]',
-                    password: '[REDACTED]',
-                    confirmPassword: '[REDACTED]',
-                    identifier: currentUser?.email
-                }
-            });
-
-            if (!currentUser?.email || !currentUser?.jwt) {
-                setFormStatus({
-                    success: false,
-                    message: 'User credentials are missing. Please try logging in again.'
-                });
-                return;
-            }
-
-            try {
-                const responseData = await response.json();
-                if (response.ok) {
-                    setPasswordError('');
-                    setFormStatus({
-                        success: true,
-                        message: 'Password changed successfully!'
-                    });
-                    form.reset();
-                } else {
-                    console.error('Error changing password:', responseData);
-                    if (responseData.error?.message === 'Invalid credentials. User not found.') {
-                        setPasswordError('Invalid credentials. Please try logging in again.');
-                    } else if (responseData.error?.message === 'Current password is incorrect') {
-                        setPasswordError('Current password is incorrect. Please try again.');
-                    } else {
-                        setPasswordError('Failed to change password. Please try again.');
-                    }
-                }
-            } catch (parseError) {
-                console.error('Error parsing response:', parseError);
-                if (response.status === 405) {
-                    setPasswordError('This operation is not allowed. Please check your permissions.');
-                } else if (response.status === 401) {
-                    setPasswordError('Authentication failed. Please log in again.');
-                } else {
-                    setPasswordError('An unexpected error occurred. Please try again.');
-                }
-            } finally {
-                setIsSubmitting(false);
-            }
-        } catch (error) {
-            console.error('Network error:', error);
-            setFormStatus({
-                success: false,
-                message: 'Network error. Please check your connection and try again.'
-            });
-            setIsSubmitting(false);
-        }
-    };
-
-    // Fetch user's tracks and sound kits
-    useEffect(() => {
-        const fetchUploads = async () => {
-            if (currentUser) {
-                try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate[0]=tracks&populate[1]=soundKits`, {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-                        }
-                    });
-                    const data = await response.json();
-                    
-                    // Update user data in localStorage with tracks and sound kits
-                    const updatedUser = {
-                        ...currentUser,
-                        tracks: data.tracks || [],
-                        soundKits: data.soundKits || []
-                    };
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-                } catch (error) {
-                    console.error('Error fetching uploads:', error);
-                }
-            }
-        };
-        
-        fetchUploads();
-    }, [currentUser]);
-
-    // Fetch subscription information
-    const fetchSubscriptionInfo = async () => {
-        if (!currentUser?.id) return;
-        
-        setIsLoadingSubscription(true);
-        try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-                    },
-                }
+          console.error("Error changing password:", responseData);
+          if (
+            responseData.error?.message ===
+            "Invalid credentials. User not found."
+          ) {
+            setPasswordError(
+              "Invalid credentials. Please try logging in again."
             );
-            
-            if (response.ok) {
-                const data = await response.json();
-                const subData = {
-                    status: data.subscriptionStatus.length > 0 ? data.subscriptionStatus : "No Subscription",
-                    plan: new Date(data.subscribedUntil) > new Date()? "Monthly" : "No Subscription",
-                    // Date a month before subscribedUntil
-                    startDate: new Date(new Date(data.subscribedUntil).setMonth(new Date(data.subscribedUntil).getMonth() - 1)).toISOString() || new Date().toISOString(),
-                    nextBillingDate: data.subscribedUntil || new Date().toISOString(),
-                    amount: data.isSubscribed ? 10 : 0
-                }
-                setSubscriptionInfo(subData);
-            } else {
-                console.error('Failed to fetch subscription info');
+          } else if (
+            responseData.error?.message === "Current password is incorrect"
+          ) {
+            setPasswordError(
+              "Current password is incorrect. Please try again."
+            );
+          } else {
+            setPasswordError("Failed to change password. Please try again.");
+          }
+        }
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError);
+        if (response.status === 405) {
+          setPasswordError(
+            "This operation is not allowed. Please check your permissions."
+          );
+        } else if (response.status === 401) {
+          setPasswordError("Authentication failed. Please log in again.");
+        } else {
+          setPasswordError("An unexpected error occurred. Please try again.");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      setFormStatus({
+        success: false,
+        message: "Network error. Please check your connection and try again.",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  // Fetch user's tracks and sound kits
+  useEffect(() => {
+    const fetchUploads = async () => {
+      if (currentUser) {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/me?populate[0]=tracks&populate[1]=soundKits`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+              },
             }
+          );
+          const data = await response.json();
+
+          // Update user data in localStorage with tracks and sound kits
+          const updatedUser = {
+            ...currentUser,
+            tracks: data.tracks || [],
+            soundKits: data.soundKits || [],
+          };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
         } catch (error) {
-            console.error('Error fetching subscription info:', error);
-        } finally {
-            setIsLoadingSubscription(false);
+          console.error("Error fetching uploads:", error);
         }
-    };
-    
-    // Call fetchSubscriptionInfo when activeTab changes to 'Subscription Plan'
-    useEffect(() => {
-        if (activeTab === 'Subscription Plan') {
-            fetchSubscriptionInfo();
-        }
-    }, [activeTab, currentUser?.id]);
-    
-    // Format date string
-    const formatDate = (dateString: string) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }).format(date);
-    };
-    
-    // Format currency
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount);
+      }
     };
 
-    return (
-        <div className={replaceClassName('d-flex flex-column flex-md-row w-100')}>
-            {/* Sidebar with Tabs */}
-            <div className={replaceClassName('w-25 w-md-20 pe-md-3 mb-4 mb-md-0')}>
-                <ul className='nav flex-md-column' role='tablist'>
-                    {tabs.map((tab) => (
-                        <li
-                            key={tab.id}
-                            className='nav-item'
-                            role='presentation'
-                        >
-                            <button
-                                className={classNames(
-                                    'nav-link w-100 text-start',
-                                    activeTab === tab.name && 'active'
-                                )}
-                                id={tab.id}
-                                type='button'
-                                role='tab'
-                                aria-selected={activeTab === tab.name}
-                                onClick={() => handleTabClick(tab.name)}
-                            >
-                                {tab.name}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+    fetchUploads();
+  }, [currentUser]);
 
-            {/* Content Area */}
-            <div className={replaceClassName('w-100 w-md-80 ps-md-3')}>
-                {activeTab === 'Edit Profile' && (
-                    <div className='card'>
-                        <div className='card-body'>
-                            {formStatus && (
-                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
-                                    {formStatus.message}
-                                </div>
+  // Fetch subscription information
+  const fetchSubscriptionInfo = async () => {
+    if (!currentUser?.id) return;
+
+    setIsLoadingSubscription(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${currentUser.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const subData = {
+          status:
+            data.subscriptionStatus.length > 0
+              ? data.subscriptionStatus
+              : "No Subscription",
+          plan:
+            new Date(data.subscribedUntil) > new Date()
+              ? "Monthly"
+              : "No Subscription",
+          // Date a month before subscribedUntil
+          startDate:
+            new Date(
+              new Date(data.subscribedUntil).setMonth(
+                new Date(data.subscribedUntil).getMonth() - 1
+              )
+            ).toISOString() || new Date().toISOString(),
+          nextBillingDate: data.subscribedUntil || new Date().toISOString(),
+          amount: data.isSubscribed ? 10 : 0,
+        };
+        setSubscriptionInfo(subData);
+      } else {
+        console.error("Failed to fetch subscription info");
+      }
+    } catch (error) {
+      console.error("Error fetching subscription info:", error);
+    } finally {
+      setIsLoadingSubscription(false);
+    }
+  };
+
+  // Call fetchSubscriptionInfo when activeTab changes to 'Subscription Plan'
+  useEffect(() => {
+    if (activeTab === "Subscription Plan") {
+      fetchSubscriptionInfo();
+    }
+  }, [activeTab, currentUser?.id]);
+
+  // Call fetchPurchaseHistory when activeTab changes to 'Purchase History'
+  // Format date string
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(date);
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  return (
+    <div className={replaceClassName("d-flex flex-column flex-md-row w-100")}>
+      {/* Sidebar with Tabs */}
+      {/* Mobile sidebar: full width, sticky on top */}
+      <div
+        className={replaceClassName("d-block d-md-none w-100")}
+        style={{ position: "sticky", top: 0, zIndex: 1020, background: "#fff" }}
+      >
+        <div className="settings-tabs-mobile px-2 py-2 border-bottom">
+          <select
+            className="form-select w-100"
+            value={activeTab}
+            onChange={(e) => handleTabClick(e.target.value as ActiveTab)}
+            aria-label="Settings Tabs"
+          >
+            {tabs.map((tab) => (
+              <option key={tab.id} value={tab.name}>
+                {tab.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {/* Desktop sidebar: vertical nav */}
+      <div
+        className={replaceClassName(
+          "w-25 w-md-20 pe-md-3 mb-4 mb-md-0 d-none d-md-block"
+        )}
+      >
+        <ul className="nav flex-md-column" role="tablist">
+          {tabs.map((tab) => (
+            <li key={tab.id} className="nav-item" role="presentation">
+              <button
+                className={classNames(
+                  "nav-link w-100 text-start",
+                  activeTab === tab.name && "active"
+                )}
+                id={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.name}
+                onClick={() => handleTabClick(tab.name)}
+              >
+                {tab.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Content Area */}
+      <div className={replaceClassName("w-100 w-md-80 ps-md-3")}>
+        {activeTab === "Edit Profile" && (
+          <div className="card">
+            <div className="card-body">
+              {formStatus && (
+                <div
+                  className={`alert ${formStatus.success ? "alert-success" : "alert-danger"} mb-4`}
+                  role="alert"
+                >
+                  {formStatus.message}
+                </div>
+              )}
+              <form
+                className={replaceClassName("px-4 pt-4 mb-3 my-sm-0 w-100")}
+                onSubmit={handleSubmit(submitForm)}
+              >
+                <div className="row mb-4">
+                  <div className="col-12 mb-4">
+                    <div className="d-flex align-items-center gap-4 flex-wrap">
+                      <div className="profile-image-section">
+                        <div className="avatar avatar--xl mb-2">
+                          <div className="avatar__image">
+                            <Image
+                              src={previewImage}
+                              className="img-fluid"
+                              width={128}
+                              height={128}
+                              alt="User avatar"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-3 d-flex gap-2">
+                          <input
+                            type="file"
+                            id="profile"
+                            className="d-none"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                          />
+                          <label
+                            htmlFor="profile"
+                            className="btn btn-primary"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {locale("change_profile_image")}
+                          </label>
+                          {currentUser?.cover &&
+                            currentUser.cover !==
+                              "/images/users/default.png" && (
+                              <button
+                                type="button"
+                                className="btn btn-danger"
+                                onClick={() => {
+                                  setPreviewImage("/images/users/default.png");
+                                  setUploadedImage(null);
+                                  const updatedUser = {
+                                    ...currentUser,
+                                    cover: "/images/users/default.png",
+                                  };
+                                  localStorage.setItem(
+                                    "user",
+                                    JSON.stringify(updatedUser)
+                                  );
+                                }}
+                              >
+                                {locale("remove_profile_image")}
+                              </button>
                             )}
-                            <form
-                                className={replaceClassName('px-4 pt-4 mb-3 my-sm-0 w-100')}
-                                onSubmit={handleSubmit(submitForm)}
-                            >
-                                <div className='row mb-4'>
-                                    <div className='col-12 mb-4'>
-                                        <div className='d-flex align-items-center gap-4 flex-wrap'>
-                                            <div className='profile-image-section'>
-                                                <div className='avatar avatar--xl mb-2'>
-                                                    <div className='avatar__image'>
-                                                        <Image
-                                                            src={previewImage}
-                                                            className='img-fluid'
-                                                            width={128}
-                                                            height={128}
-                                                            alt='User avatar'
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="mt-3 d-flex gap-2">
-                                                    <input
-                                                        type='file'
-                                                        id='profile'
-                                                        className='d-none'
-                                                        accept="image/*"
-                                                        onChange={handleImageChange}
-                                                    />
-                                                    <label
-                                                        htmlFor='profile'
-                                                        className='btn btn-primary'
-                                                        style={{ color: '#ffffff' }}
-                                                    >
-                                                        {locale('change_profile_image')}
-                                                    </label>
-                                                    {currentUser?.cover && currentUser.cover !== "/images/users/default.png" && (
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-danger"
-                                                            onClick={() => {
-                                                                setPreviewImage("/images/users/default.png");
-                                                                setUploadedImage(null);
-                                                                const updatedUser = {
-                                                                    ...currentUser,
-                                                                    cover: "/images/users/default.png"
-                                                                };
-                                                                localStorage.setItem("user", JSON.stringify(updatedUser));
-                                                            }}
-                                                        >
-                                                            {locale('remove_profile_image')}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                        <div className='row g-4'>
-                            <div className='col-sm-6'>
-                                <Input
-                                    label="First Name"
-                                    id='firstName'
-                                    className={classNames(
-                                        'form-control',
-                                        errors?.firstName && 'is-invalid'
-                                    )}
-                                    disabled={!isEditing}
-                                    {...register('firstName', {required: true})}
-                                />
-                                {<ErrorHandler root={errors?.firstName as any} />}
-                            </div>
-                                <div className='col-sm-6'>
-                                    <Input
-                                    label="Last Name"
-                                    id='lastName'
-                                    className={classNames(
-                                        'form-control',
-                                        errors?.lastName && 'is-invalid'
-                                    )}
-                                    disabled={!isEditing}
-                                    {...register('lastName', {required: true})}
-                                />
-                                {<ErrorHandler root={errors?.lastName as any} />}
-                            </div>
-                            <div className='col-sm-6'>
-                                <Input
-                                    label={locale('display_name')}
-                                    id='d_name'
-                                    className={classNames(
-                                        'form-control',
-                                        errors?.displayName && 'is-invalid'
-                                    )}
-                                    disabled={!isEditing}
-                                    {...register('displayName', {required: true})}
-                                />
-                                {<ErrorHandler root={errors?.displayName as any} />}
-                            </div>
-                            <div className='col-sm-6'>
-                                <Input
-                                    label={locale('username')}
-                                    id='username'
-                                    className={classNames(
-                                        'form-control',
-                                        errors?.username && 'is-invalid'
-                                    )}
-                                    disabled={!isEditing}
-                                    {...register('username', {required: true})}
-                                />
-                                {<ErrorHandler root={errors?.username as any} />}
-                            </div>
-                            <div className='col-12'>
-                                <div style={{minHeight: 100}}>
-                                    <Input
-                                        as='textarea'
-                                        label={locale('bio')}
-                                        id='bio'
-                                        className='form-control'
-                                        placeholder='Write here...'
-                                        disabled={!isEditing}
-                                        {...register('bio')}
-                                    />
-                                </div>
-                                <div className="mt-3 d-flex gap-2">
-                                    {!isEditing ? (
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            style={{ color: '#ffffff' }}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                setIsEditing(true);
-                                            }}
-                                        >
-                                            {locale('edit_profile_info')}
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary"
-                                                style={{ color: '#ffffff' }}
-                                            >
-                                                {locale('save')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-secondary"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    handleCancel();
-                                                }}
-                                            >
-                                                {locale('cancel')}
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-        
-                            </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="row g-4">
+                  <div className="col-sm-6">
+                    <Input
+                      label="First Name"
+                      id="firstName"
+                      className={classNames(
+                        "form-control",
+                        errors?.firstName && "is-invalid"
+                      )}
+                      disabled={!isEditing}
+                      {...register("firstName", { required: true })}
+                    />
+                    {<ErrorHandler root={errors?.firstName as any} />}
+                  </div>
+                  <div className="col-sm-6">
+                    <Input
+                      label="Last Name"
+                      id="lastName"
+                      className={classNames(
+                        "form-control",
+                        errors?.lastName && "is-invalid"
+                      )}
+                      disabled={!isEditing}
+                      {...register("lastName", { required: true })}
+                    />
+                    {<ErrorHandler root={errors?.lastName as any} />}
+                  </div>
+                  <div className="col-sm-6">
+                    <Input
+                      label={locale("display_name")}
+                      id="d_name"
+                      className={classNames(
+                        "form-control",
+                        errors?.displayName && "is-invalid"
+                      )}
+                      disabled={!isEditing}
+                      {...register("displayName", { required: true })}
+                    />
+                    {<ErrorHandler root={errors?.displayName as any} />}
+                  </div>
+                  <div className="col-sm-6">
+                    <Input
+                      label={locale("username")}
+                      id="username"
+                      className={classNames(
+                        "form-control",
+                        errors?.username && "is-invalid"
+                      )}
+                      disabled={!isEditing}
+                      {...register("username", { required: true })}
+                    />
+                    {<ErrorHandler root={errors?.username as any} />}
+                  </div>
+                  <div className="col-12">
+                    <div style={{ minHeight: 100 }}>
+                      <Input
+                        as="textarea"
+                        label={locale("bio")}
+                        id="bio"
+                        className="form-control"
+                        placeholder="Write here..."
+                        disabled={!isEditing}
+                        {...register("bio")}
+                      />
+                    </div>
+                    <div className="mt-3 d-flex gap-2">
+                      {!isEditing ? (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ color: "#ffffff" }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setIsEditing(true);
+                          }}
+                        >
+                          {locale("edit_profile_info")}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="submit"
+                            className="btn btn-primary"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {locale("save")}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleCancel();
+                            }}
+                          >
+                            {locale("cancel")}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                            {/* Connected Accounts Section */}
-                            <div className='col-12'>
+                  {/* Connected Accounts Section */}
+                  {/* <div className='col-12'>
                                 <h5 className='mb-4 text-dark'>{locale('settings.connected_accounts')}</h5>
                                 <ul className='list-group list-group-flush'>
                                     <li className='list-group-item d-flex justify-content-between align-items-center py-3'>
@@ -990,366 +1197,634 @@ const ProfileForm: React.FC = () => {
                                         </button>
                                     </li>
                                 </ul>
-                            </div>
-                        </div>
-                    </form>
+                            </div> */}
                 </div>
-                </div>
-                )}
-
-                {activeTab === 'My Uploads' && (
-                    <div className='card'>
-                        <div className='card-body'>
-                            <UserUploads />
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'Account Security' && (
-                    <div>
-                        <div className='card'>
-                            <div className='card-body'>
-                                {formStatus && (
-                                    <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
-                                        {formStatus.message}
-                                    </div>
-                                )}
-                                <h5 className='mb-4 text-dark'>Change Email Address</h5>
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        const newEmail = (e.target as any).newEmail.value;
-                                        sendEmailConfirmation(newEmail);
-                                    }}
-                                >
-                                    <div className='mb-3'>
-                                        <label htmlFor='currentEmail' className='form-label'>
-                                            Current Email Address
-                                        </label>
-                                        <input
-                                            type='email'
-                                            className='form-control'
-                                            id='currentEmail'
-                                            value={currentUser?.email || ''}
-                                            disabled
-                                        />
-                                    </div>
-                                    <div className='mb-3'>
-                                        <label htmlFor='newEmail' className='form-label'>
-                                            New Email Address
-                                        </label>
-                                        <input
-                                            type='email'
-                                            className='form-control'
-                                            id='newEmail'
-                                            placeholder='Enter new email address'
-                                            required
-                                        />
-                                    </div>
-                                    <button type='submit' className='btn btn-primary' style={{ color: '#ffffff' }}>
-                                        Update Email
-                                    </button>
-                                </form>
-
-                                <hr className='my-5' />
-
-                                <h5 className='mb-4 text-dark'>Change Password</h5>
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        const currentPassword = (e.target as any).currentPassword.value;
-                                        const newPassword = (e.target as any).newPassword.value;
-                                        const confirmPassword = (e.target as any).confirmPassword.value;
-
-                                        if (newPassword !== confirmPassword) {
-                                            setFormStatus({
-                                                success: false,
-                                                message: 'New password and confirmation password do not match.'
-                                            });
-                                            return;
-                                        }
-
-                                        changePassword(currentPassword, newPassword, confirmPassword, e.currentTarget);
-                                    }}
-                                >
-                                    <div className='mb-3'>
-                                        <label htmlFor='currentPassword' className='form-label'>
-                                            Current Password
-                                        </label>
-                                        <input
-                                            type='password'
-                                            className={`form-control ${passwordError ? 'is-invalid' : ''}`}
-                                            id='currentPassword'
-                                            placeholder='Enter current password'
-                                            minLength={6}
-                                            required
-                                        />
-                                    </div>
-                                    <div className='mb-3'>
-                                        <label htmlFor='newPassword' className='form-label'>
-                                            New Password
-                                        </label>
-                                        <input
-                                            type='password'
-                                            className={`form-control ${passwordError ? 'is-invalid' : ''}`}
-                                            id='newPassword'
-                                            placeholder='Enter new password'
-                                            minLength={6}
-                                            required
-                                        />
-                                        <div className='form-text'>
-                                            Password must be at least 6 characters long
-                                        </div>
-                                    </div>
-                                    <div className='mb-3'>
-                                        <label htmlFor='confirmPassword' className='form-label'>
-                                            Confirm New Password
-                                        </label>
-                                        <input
-                                            type='password'
-                                            className={`form-control ${passwordError ? 'is-invalid' : ''}`}
-                                            id='confirmPassword'
-                                            placeholder='Confirm new password'
-                                            minLength={6}
-                                            required
-                                        />
-                                        {passwordError && (
-                                            <div className='invalid-feedback'>
-                                                {passwordError}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button
-                                        type='submit'
-                                        className='btn btn-primary'
-                                        style={{ color: '#ffffff' }}
-                                        disabled={isSubmitting}
-                                    >
-                                        {isSubmitting ? 'Updating Password...' : 'Update Password'}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'Subscription Plan' && (
-                    <div className='card'>
-                        <div className='card-body'>
-                            {formStatus && (
-                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
-                                    {formStatus.message}
-                                </div>
-                            )}
-                            <h5 className='mb-4 text-dark'>Subscription Plan</h5>
-                            
-                            {isLoadingSubscription ? (
-                                <div className="text-center py-4">
-                                    <div className="spinner-border" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
-                            ) : subscriptionInfo ? (
-                                <div>
-                                    <div className="card mb-4 border-primary">
-                                        <div className="card-header bg-primary text-white">
-                                            <h5 className="mb-0">Current Plan: {subscriptionInfo.plan}</h5>
-                                        </div>
-                                        <div className="card-body">
-                                            <div className="row">
-                                                <div className="col-md-6 mb-3">
-                                                    <p className="mb-1 fw-bold">Status</p>
-                                                    <p className={`mb-3 ${subscriptionInfo.status === 'active' ? 'text-success' : 'text-warning'}`}>
-                                                        {subscriptionInfo.status.charAt(0).toUpperCase() + subscriptionInfo.status.slice(1)}
-                                                    </p>
-                                                    
-                                                    <p className="mb-1 fw-bold">Start Date</p>
-                                                    <p className="mb-3">{formatDate(subscriptionInfo.startDate)}</p>
-                                                </div>
-                                                <div className="col-md-6 mb-3">
-                                                    <p className="mb-1 fw-bold">Monthly Payment</p>
-                                                    <p className="mb-3">{formatCurrency(subscriptionInfo.amount)}</p>
-                                                    
-                                                    <p className="mb-1 fw-bold">Next Billing Date</p>
-                                                    <p className="mb-3">{formatDate(subscriptionInfo.nextBillingDate)}</p>
-                                                </div>
-                                                {/* Credits subscription and other */}
-                                            <div className="col-12 mt-3">
-                                                <div className="card border-info">
-                                                    <div className="card-header bg-info text-white">
-                                                        <h6 className="mb-0">Credits Information</h6>
-                                                    </div>
-                                                    <div className="card-body">
-                                                        <div className="row">
-                                                            <div className="col-md-6">
-                                                                <p className="mb-1 fw-bold">Subscription Credits</p>
-                                                                <p className="mb-3">{currentUser?.sub_credits || 0} credits</p>
-                                                            </div>
-                                                            <div className="col-md-6">
-                                                                <p className="mb-1 fw-bold">Regular Credits</p>
-                                                                <p className="mb-3">{currentUser?.credits || 0} credits</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            </div>
-                                            <div className="mt-3 d-flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline-primary"
-                                                    onClick={async () => {
-                                                        try {
-                                                            const response = await fetch('/api/create-portal-session', {
-                                                                method: 'POST',
-                                                                headers: {
-                                                                    'Content-Type': 'application/json',
-                                                                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-                                                                },
-                                                                body: JSON.stringify({
-                                                                    customerId: currentUser?.stripeCustomerId
-                                                                })
-                                                            });
-                                                            
-                                                            if (!response.ok) {
-                                                                throw new Error('Failed to create portal session');
-                                                            }
-                                                            
-                                                            const { url } = await response.json();
-                                                            window.location.href = url;
-                                                        } catch (error) {
-                                                            console.error('Error creating portal session:', error);
-                                                            setFormStatus({
-                                                                success: false,
-                                                                message: 'Failed to access billing portal. Please try again.'
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    Manage Subscription
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="alert alert-info">
-                                        <p className="mb-0">You don't have an active subscription. Subscribe to access premium features!</p>
-                                    </div>
-                                    <div className="mt-3">
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            onClick={() => window.location.href = '/plan'}
-                                        >
-                                            View Plans
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'Delete Account' && (
-                    <div className='card'>
-                        <div className='card-body'>
-                            {formStatus && (
-                                <div className={`alert ${formStatus.success ? 'alert-success' : 'alert-danger'} mb-4`} role="alert">
-                                    {formStatus.message}
-                                </div>
-                            )}
-                            <div className='d-flex align-items-center mb-4'>
-                                <div>
-                                    <h5 className='text-dark mb-4'>Delete Account</h5>
-                                    <p className='mb-0'>
-                                    <RiAlertLine className='fs-1 text-danger me-2' />
-                                    <strong className='text-danger'>WARNING!</strong> <br /> This action cannot be undone. All your data will be permanently deleted.
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                className='btn btn-danger'
-                                onClick={() => setShowDeleteModal(true)}
-                            >
-                                Delete Account
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Delete Account Confirmation Modal */}
-                {showDeleteModal && (
-                    <div
-                        className='modal show d-block'
-                        tabIndex={-1}
-                        style={{ zIndex: 1050, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget) {
-                                closeDeleteModal()
-                            }
-                        }}
-                    >
-                        <div className='modal-dialog modal-dialog-centered'>
-                            <div className='modal-content'>
-                                <div className='modal-header'>
-                                    <h5 className='modal-title text-dark'>Confirm Account Deletion</h5>
-                                    <button
-                                        type='button'
-                                        className='btn-close'
-                                        onClick={closeDeleteModal}
-                                    />
-                                </div>
-                                <div className='modal-body'>
-                                    <p>Are you absolutely sure you want to delete your account? This action cannot be undone, and you will lose access to:</p>
-                                    <ul className='list-unstyled mb-4'>
-                                        <li>• <strong>Your profile and personal information</strong></li>
-                                        <li>• <strong>Your uploaded samples and sound kits</strong></li>
-                                        <li>• <strong>Your purchase history and analytics</strong></li>
-                                        <li>• <strong>Your total earnings and the ability to withdraw funds</strong></li>
-                                    </ul>
-                                    <p className="text-danger">
-                                        ⚠️ <strong>Important:</strong> If you have earnings in your account, they will be permanently lost upon deletion. 
-                                        We strongly recommend withdrawing your funds before proceeding. If you have not yet reached the withdrawal 
-                                        threshold, consider waiting until you do so to avoid losing your balance.
-                                    </p>
-                                    <div className='form-group'>
-                                        <label className='form-label'>Type "delete account" to confirm:</label>
-                                        <input
-                                            type='text'
-                                            className='form-control'
-                                            value={deleteConfirmation}
-                                            onChange={(e) => setDeleteConfirmation(e.target.value)}
-                                            placeholder='delete account'
-                                        />
-                                    </div>
-                                </div>
-                                <div className='modal-footer'>
-                                    <button
-                                        type='button'
-                                        className='btn btn-secondary'
-                                        onClick={closeDeleteModal}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type='button'
-                                        className='btn btn-danger'
-                                        onClick={handleDeleteAccount}
-                                        disabled={deleteConfirmation.toLowerCase() !== 'delete account'}
-                                    >
-                                        Yes, Delete My Account
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+              </form>
             </div>
-        </div>
-    );
+          </div>
+        )}
+
+        {activeTab === "My Samples" && currentUser?.isProducer === true && (
+          <div className="card">
+            <div className="card-body">
+              <UserUploads />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Account Security" && (
+          <div>
+            <div className="card">
+              <div className="card-body">
+                {formStatus && (
+                  <div
+                    className={`alert ${formStatus.success ? "alert-success" : "alert-danger"} mb-4`}
+                    role="alert"
+                  >
+                    {formStatus.message}
+                  </div>
+                )}
+                <h5 className="mb-4 text-dark">Change Email Address</h5>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const newEmail = (e.target as any).newEmail.value;
+                    sendEmailConfirmation(newEmail);
+                  }}
+                >
+                  <div className="mb-3">
+                    <label htmlFor="currentEmail" className="form-label">
+                      Current Email Address
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      id="currentEmail"
+                      value={currentUser?.email || ""}
+                      disabled
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="newEmail" className="form-label">
+                      New Email Address
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      id="newEmail"
+                      placeholder="Enter new email address"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ color: "#ffffff" }}
+                  >
+                    Update Email
+                  </button>
+                </form>
+
+                <hr className="my-5" />
+
+                <h5 className="mb-4 text-dark">Change Password</h5>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const currentPassword = (e.target as any).currentPassword
+                      .value;
+                    const newPassword = (e.target as any).newPassword.value;
+                    const confirmPassword = (e.target as any).confirmPassword
+                      .value;
+
+                    if (newPassword !== confirmPassword) {
+                      setFormStatus({
+                        success: false,
+                        message:
+                          "New password and confirmation password do not match.",
+                      });
+                      return;
+                    }
+
+                    changePassword(
+                      currentPassword,
+                      newPassword,
+                      confirmPassword,
+                      e.currentTarget
+                    );
+                  }}
+                >
+                  <div className="mb-3">
+                    <label htmlFor="currentPassword" className="form-label">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      className={`form-control ${passwordError ? "is-invalid" : ""}`}
+                      id="currentPassword"
+                      placeholder="Enter current password"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="newPassword" className="form-label">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      className={`form-control ${passwordError ? "is-invalid" : ""}`}
+                      id="newPassword"
+                      placeholder="Enter new password"
+                      minLength={6}
+                      required
+                    />
+                    <div className="form-text">
+                      Password must be at least 6 characters long
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="confirmPassword" className="form-label">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      className={`form-control ${passwordError ? "is-invalid" : ""}`}
+                      id="confirmPassword"
+                      placeholder="Confirm new password"
+                      minLength={6}
+                      required
+                    />
+                    {passwordError && (
+                      <div className="invalid-feedback">{passwordError}</div>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    style={{ color: "#ffffff" }}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Updating Password..." : "Update Password"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Subscription Plan" && (
+          <div className="card">
+            <div className="card-body">
+              {formStatus && (
+                <div
+                  className={`alert ${formStatus.success ? "alert-success" : "alert-danger"} mb-4`}
+                  role="alert"
+                >
+                  {formStatus.message}
+                </div>
+              )}
+              <div className="row justify-content-center align-items-stretch g-5">
+                {/* Subscription Card */}
+                <div className="col-lg-6 d-flex align-items-stretch">
+                  <div
+                    className="card h-100 shadow border-0 w-100"
+                    style={{
+                      borderRadius: "12px",
+                      maxWidth: "500px",
+                      margin: "0 auto",
+                    }}
+                  >
+                    <div className="card-body d-flex flex-column p-5">
+                      {/* Header */}
+                      <div className="text-center mb-4">
+                        <RiVipCrownLine
+                          size={40}
+                          className="text-primary mb-3"
+                        />
+                        <h3 className="plan-title text-black mb-2 fw-bold">
+                          Subscription Plan
+                        </h3>
+                      </div>
+
+                      {isLoadingSubscription ? (
+                        <div className="flex-grow-1 d-flex align-items-center justify-content-center">
+                          <div
+                            className="spinner-border text-primary"
+                            role="status"
+                          >
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      ) : subscriptionInfo ? (
+                        <>
+                          <div className="card-features flex-grow-1">
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted">Status</span>
+                              <span
+                                className={
+                                  subscriptionInfo.status === "active"
+                                    ? "text-success fw-bold"
+                                    : "text-warning fw-bold"
+                                }
+                              >
+                                {subscriptionInfo.status
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  subscriptionInfo.status.slice(1)}
+                              </span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted">Plan</span>
+                              <span className="fw-bold">
+                                {subscriptionInfo.plan}
+                              </span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted">
+                                Monthly Payment
+                              </span>
+                              <span className="fw-bold">
+                                {formatCurrency(subscriptionInfo.amount)}
+                              </span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted">Start Date</span>
+                              <span>
+                                {formatDate(subscriptionInfo.startDate)}
+                              </span>
+                            </div>
+                            <div className="d-flex justify-content-between">
+                              <span className="text-muted">Next Billing</span>
+                              <span>
+                                {formatDate(subscriptionInfo.nextBillingDate)}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Footer */}
+                          <div
+                            className="mt-auto d-flex align-items-end"
+                            style={{ minHeight: 56 }}
+                          >
+                            <button
+                              type="button"
+                              className="btn btn-primary w-100 py-2 text-white"
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(
+                                    "/api/create-portal-session",
+                                    {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+                                      },
+                                      body: JSON.stringify({
+                                        customerId:
+                                          currentUser?.stripeCustomerId,
+                                      }),
+                                    }
+                                  );
+                                  if (!response.ok) {
+                                    throw new Error(
+                                      "Failed to create portal session"
+                                    );
+                                  }
+                                  const { url } = await response.json();
+                                  window.location.href = url;
+                                } catch (error) {
+                                  console.error(
+                                    "Error creating portal session:",
+                                    error
+                                  );
+                                  setFormStatus({
+                                    success: false,
+                                    message:
+                                      "Failed to access billing portal. Please try again.",
+                                  });
+                                }
+                              }}
+                            >
+                              Manage Subscription
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div
+                          className="text-center flex-grow-1 d-flex flex-column justify-content-between"
+                          style={{ minHeight: 200 }}
+                        >
+                          <div>
+                            <p className="text-muted mb-4">
+                              You don't have an active subscription
+                            </p>
+                          </div>
+                          <div
+                            className="mt-auto d-flex align-items-end"
+                            style={{ minHeight: 56 }}
+                          >
+                            <button
+                              type="button"
+                              className="btn btn-primary w-100 py-2 text-white"
+                              onClick={() => (window.location.href = "/plan")}
+                            >
+                              Subscribe Now
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credits Card - Only shown when user has active subscription */}
+                {currentUser?.isSubscribed === true &&
+                  currentUser?.subscriptionStatus === "active" && (
+                    <div className="col-lg-6 d-flex align-items-stretch">
+                      <div
+                        className="card h-100 shadow border-0 w-100"
+                        style={{
+                          borderRadius: "12px",
+                          maxWidth: "500px",
+                          margin: "0 auto",
+                        }}
+                      >
+                        <div className="card-body d-flex flex-column p-5">
+                          {/* Header */}
+                          <div className="text-center mb-4">
+                            <RiCoinsLine
+                              size={40}
+                              className="text-primary mb-3"
+                            />
+                            <h3 className="plan-title text-black mb-2 fw-bold">
+                              Credits
+                            </h3>
+                          </div>
+                          {/* Content */}
+                          <div className="flex-grow-1">
+                            <div className="text-center mb-4">
+                              <p className="text-muted mb-2">Total Credits</p>
+                              <div className="d-flex justify-content-center align-items-baseline gap-2">
+                                <span className="display-4 fw-bold">
+                                  {(currentUser?.sub_credits || 0) +
+                                    (currentUser?.credits || 0)}
+                                </span>
+                                <span className="text-muted fs-5">credits</span>
+                              </div>
+                            </div>
+                            {/* <div className="card-features flex-grow-1 mb-4">
+                                                        <div className="d-flex justify-content-between mb-2">
+                                                            <span className="text-muted">Subscription Credits</span>
+                                                            <span className="fw-bold">{currentUser?.sub_credits || 0}</span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between mb-2">
+                                                            <span className="text-muted">Regular Credits</span>
+                                                            <span className="fw-bold">{currentUser?.credits || 0}</span>
+                                                        </div>
+                                                    </div> */}
+                          </div>
+                          {/* Footer */}
+                          <div
+                            className="mt-auto d-flex align-items-end"
+                            style={{ minHeight: 56 }}
+                          >
+                            <button
+                              type="button"
+                              className="btn btn-primary w-100 py-2 text-white"
+                              onClick={() =>
+                                initiatePurchase(
+                                  process.env
+                                    .NEXT_PUBLIC_STRIPE_PRODUCT_ID_CREDITS!,
+                                  false,
+                                  localStorage.getItem("jwt") || undefined
+                                )
+                              }
+                            >
+                              Purchase Credits
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Purchase History" && (
+          <div className="card">
+            <div className="card-body">
+              <h5 className="mb-4 text-black">Purchase History</h5>
+              <Tab id="purchase-history">
+                <li className="nav-item" role="presentation">
+                  <button
+                    className={`nav-link ${purchaseHistoryTab === "samples" ? "active" : ""}`}
+                    id="samples"
+                    type="button"
+                    role="tab"
+                    aria-selected={purchaseHistoryTab === "samples"}
+                    onClick={() => setPurchaseHistoryTab("samples")}
+                  >
+                    Samples Purchased
+                  </button>
+                </li>
+                <li className="nav-item" role="presentation">
+                  <button
+                    className={`nav-link ${purchaseHistoryTab === "all_orders" ? "active" : ""}`}
+                    id="all_orders"
+                    type="button"
+                    role="tab"
+                    aria-selected={purchaseHistoryTab === "all_orders"}
+                    onClick={() => setPurchaseHistoryTab("all_orders")}
+                  >
+                    All Orders
+                  </button>
+                </li>
+              </Tab>
+              <div className="tab-content p-4">
+                <div
+                  className={`tab-pane fade ${purchaseHistoryTab === "samples" ? "show active" : ""}`}
+                >
+                  {purchasedSamples.length > 0 ? (
+                    <Section
+                      title=""
+                      data={purchasedSamples}
+                      card="track"
+                      slideView={4}
+                      navigation
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <p className="mb-0">{locale("no_samples_purchased")}</p>
+                    </div>
+                  )}
+                </div>
+                <div
+                  className={`tab-pane fade ${purchaseHistoryTab === "all_orders" ? "show active" : ""}`}
+                >
+                  {transactions.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="table table-primary">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {transactions.map((transaction) => (
+                            <tr key={transaction.id}>
+                              <td>{formatDate(transaction.date)}</td>
+                              <td style={{ textTransform: "capitalize" }}>
+                                {transaction.type}
+                              </td>
+                              <td>
+                                {"Sample:" +
+                                  transaction.track.data?.attributes.title}
+                              </td>
+                              <td>{formatCurrency(transaction.amount)}</td>
+                              <td>
+                                {transaction.invoiceUrl && (
+                                  <button
+                                    className="btn btn-sm btn-outline-primary"
+                                    onClick={() =>
+                                      window.open(
+                                        transaction.invoiceUrl,
+                                        "_blank"
+                                      )
+                                    }
+                                  >
+                                    View Invoice
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="mb-0">{locale("no_orders_found")}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Delete Account" && (
+          <div className="card">
+            <div className="card-body">
+              {formStatus && (
+                <div
+                  className={`alert ${formStatus.success ? "alert-success" : "alert-danger"} mb-4`}
+                  role="alert"
+                >
+                  {formStatus.message}
+                </div>
+              )}
+              <div className="d-flex align-items-center mb-4">
+                <div>
+                  <h5 className="text-dark mb-4">Delete Account</h5>
+                  <p className="mb-0">
+                    <RiAlertLine className="fs-1 text-danger me-2" />
+                    <strong className="text-danger">
+                      WARNING!
+                    </strong> <br /> This action cannot be undone. All your data
+                    will be permanently deleted.
+                  </p>
+                </div>
+              </div>
+              <button
+                className="btn btn-danger"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                Delete Account
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Account Confirmation Modal */}
+        {showDeleteModal && (
+          <div
+            className="modal show d-block"
+            tabIndex={-1}
+            style={{ zIndex: 1050, backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeDeleteModal();
+              }
+            }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title text-dark">
+                    Confirm Account Deletion
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeDeleteModal}
+                  />
+                </div>
+                <div className="modal-body">
+                  <p>
+                    Are you absolutely sure you want to delete your account?
+                    This action cannot be undone, and you will lose access to:
+                  </p>
+                  <ul className="list-unstyled mb-4">
+                    <li>
+                      • <strong>Your profile and personal information</strong>
+                    </li>
+                    <li>
+                      • <strong>Your uploaded samples and sound kits</strong>
+                    </li>
+                    <li>
+                      • <strong>Your purchase history and analytics</strong>
+                    </li>
+                    <li>
+                      •{" "}
+                      <strong>
+                        Your total earnings and the ability to withdraw funds
+                      </strong>
+                    </li>
+                  </ul>
+                  <p className="text-danger">
+                    ⚠️ <strong>Important:</strong> If you have earnings in your
+                    account, they will be permanently lost upon deletion. We
+                    strongly recommend withdrawing your funds before proceeding.
+                    If you have not yet reached the withdrawal threshold,
+                    consider waiting until you do so to avoid losing your
+                    balance.
+                  </p>
+                  <div className="form-group">
+                    <label className="form-label">
+                      Type "delete account" to confirm:
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={deleteConfirmation}
+                      onChange={(e) => setDeleteConfirmation(e.target.value)}
+                      placeholder="delete account"
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeDeleteModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleDeleteAccount}
+                    disabled={
+                      deleteConfirmation.toLowerCase() !== "delete account"
+                    }
+                  >
+                    Yes, Delete My Account
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-ProfileForm.displayName = 'ProfileForm';
+ProfileForm.displayName = "ProfileForm";
 export default ProfileForm;

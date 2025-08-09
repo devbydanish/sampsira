@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "purchaseDate": "2025-06-15T14:30:00.000Z",
+    "sampleName": "Summer Vibes Beat",
+    "licenseUrl": "https://example.com/licenses/summer-vibes-license.pdf",
+    "purchasedBy": "John Doe"
+  },
+  {
+    "id": 2,
+    "purchaseDate": "2025-06-10T09:15:00.000Z",
+    "sampleName": "Trap Melody Loop",
+    "licenseUrl": "https://example.com/licenses/trap-melody-license.pdf",
+    "purchasedBy": "Jane Smith"
+  },
+  {
+    "id": 3,
+    "purchaseDate": "2025-06-05T16:45:00.000Z",
+    "sampleName": "Reggaeton Drum Kit",
+    "licenseUrl": "https://example.com/licenses/reggaeton-drums-license.pdf",
+    "purchasedBy": "Michael Johnson"
+  },
+  {
+    "id": 4,
+    "purchaseDate": "2025-05-28T11:20:00.000Z",
+    "sampleName": "Hip-Hop Bass Line",
+    "licenseUrl": "https://example.com/licenses/hiphop-bass-license.pdf",
+    "purchasedBy": "Sarah Williams"
+  },
+  {
+    "id": 5,
+    "purchaseDate": "2025-05-20T13:10:00.000Z",
+    "sampleName": "Techno Synth Lead",
+    "licenseUrl": "https://example.com/licenses/techno-synth-license.pdf",
+    "purchasedBy": "David Brown"
+  }
+]

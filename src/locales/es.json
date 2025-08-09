@@ -20,6 +20,10 @@
     "jersey_club": "Jersey Club",
     "drumandbass": "Drum & Bass",
     "dancehall": "Dancehall",
+    "amapiano": "Amapiano",
+    "house": "House",
+    "pop": "Pop",
+    "randb": "R&B",
     "afrobeat": "Afrobeat",
     "hiphop_rap": "Hip-Hop/Rap",
     "trending": "Tendencias",
@@ -61,12 +65,14 @@
     "create_event": "Crear evento",
     "create_event_title": "Crear <primary>Evento</primary>",
     "upload_track": "Subir Track",
+    "upload_sample": "Subir Sample",
     "upload_sound_kit": "Subir Kit de Sonido",
     "add_track": "Añadir Track",
     "add_sound_kit": "Añadir Kit de Sonido",
     "replace_image": "Reemplazar Imagen",
     "sound_kit_title": "Título del Kit de Sonido",
     "add_new": "Agregar nuevo",
+    "select_genre": "Seleccionar género...",
     "select_keys": "Seleccionar tonos...",
     "select_moods": "Seleccionar ánimos...",
     "tracks": "Tracks",
@@ -97,6 +103,7 @@
     "top_playlist_title": "Lista de Reproducción <primary>Principal</primary>",
     "drag_and_drop_upload": "Arrastra y suelta o haz clic para subir",
     "cover_image": "Imágen de Portada",
+    "choose_file": "Elegir Archivo",
     "change_image": "Cambiar imagen",
     "edit_profile": "Editar Perfil",
     "change_profile_image": "Cambiar Imágen de Perfil",
@@ -107,6 +114,8 @@
     "producer_name": "Nombre de productor",
     "location": "Ubicación",
     "about": "Acerca de",
+    "no_samples_purchased": "No se han comprado samples",
+    "no_orders_found": "No se han encontrado órdenes",
     "header": {
         "discover": "Descubrir",
         "pricing": "Precios",
@@ -119,6 +128,7 @@
         "plan": "Plan"
     },
     "sidebar": {
+        "sample_clearance": "Aclaración de Samples",
         "home": "Inicio",
         "about_us": "Sobre Nosotros",
         "blog": "Blog",
@@ -193,8 +203,8 @@
         "month": "mes",
         "subscribe": "Suscribirse Ahora",
         "buyCredits": "Comprar Créditos",
-        "plan_subtitle": "Selecciona tu plan preferido",
-        "unlimited_access": "Suscríbete para acceso ilimitado",
+        "plan_subtitle": "Plan de Suscripción",
+        "monthly_access": "Suscríbete para acceso mensual",
         "pay_as_you_go": "Paga según uses",
         "year": "año",
         "choose": "Elegir",
@@ -247,7 +257,7 @@
     "footer": {
         "title": "Únete a",
         "subtitle": "<primary>Millones de canciones</primary> a las que accedes con tu información básica.",
-        "description": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Molestias explicabo harum perspiciatis voluptates sed ut.",
+        "description": "Únete a la mejor comunidad de productores en línea para vender tus beats directamente al consumidor y tener la oportunidad de aparecer en placements musicales.",
         "copy": "Todos los derechos reservados."
     }  
 }

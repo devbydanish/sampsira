@@ -89,7 +89,7 @@ export default function ProducerPage() {
     }
 
     if (error || !producer) {
-        return <div className="container py-5 text-center">{error || 'Producer not found'}</div>
+        return <div className="container py-5 text-center" style={{marginTop: '100px'}}>{error || 'Producer not found'}</div>
     }
 
     return (
@@ -134,7 +134,7 @@ export default function ProducerPage() {
                     )}
                 </div>
 
-                <div className='section'>
+                {/* <div className='section'>
                     <div className='section__head'>
                         <h3 className='mb-0'>{locale('sidebar.sound_kits')}</h3>
                     </div>
@@ -156,7 +156,7 @@ export default function ProducerPage() {
                     ) : (
                         <p className="my-4">{locale('no_sound_kits_uploaded')}</p>
                     )}
-                </div>
+                </div> */}
             </div>
         </div>
     )

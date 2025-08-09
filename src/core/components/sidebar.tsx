@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import classNames from 'classnames'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -23,28 +23,48 @@ const Sidebar: React.FC = () => {
     const { replaceClassName, sidebarSkin } = useTheme()
     const { currentUser, isLoading } = useAuthentication()
     const navbar = useTranslations('sidebar')
+    const sidebarRef = useRef<HTMLDivElement>(null)
 
-    console.log('Sidebar rendering:', {
-        currentUser,
-        isProducer: currentUser?.isProducer,
-        isLoading
-    });
-
-    const shouldShowAddMusicButton = currentUser?.isProducer === true;
+    const shouldShowAddMusicButton = currentUser?.isProducer === true
 
     const filteredNavbar = NAVBAR.filter(nav => {
         if (!nav.producerOnly) {
-            return true;
+            return true
         }
-        return currentUser?.isProducer === true;
-    });
+        return currentUser?.isProducer === true
+    })
 
     const isActiveRoute = (href: string) => {
         if (href === "/") {
-            return pathname === href;
+            return pathname === href
         }
-        return pathname.startsWith(href) && pathname !== "/";
-    };
+        return pathname.startsWith(href) && pathname !== "/"
+    }
+
+    // Close sidebar on mobile
+    const closeSidebar = () => {
+        if (typeof window !== "undefined" && window.innerWidth < 992) {
+            document.body.classList.remove('sidebar-open')
+        }
+    }
+
+    // Handle clicks outside the sidebar
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                closeSidebar()
+            }
+        }
+
+        // Only add listener for mobile view
+        if (typeof window !== "undefined" && window.innerWidth < 992) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [])
 
     const navLink = (nav: any) => {
         return nav.title ? (
@@ -56,12 +76,13 @@ const Sidebar: React.FC = () => {
                     'nav-link d-flex align-items-center',
                     isActiveRoute(nav.href) && 'active'
                 )}
+                onClick={closeSidebar} // Close sidebar when link is clicked
             >
                 <nav.icon size={20} />
                 <span className={replaceClassName('ms-3')}>{navbar(nav.name)}</span>
             </Link>
-        );
-    };
+        )
+    }
 
     if (isLoading) {
         return (
@@ -73,57 +94,83 @@ const Sidebar: React.FC = () => {
                     </div>
                 </div>
             </aside>
-        );
+        )
     }
 
     return (
-        <aside id='sidebar' data-sidebar={sidebarSkin}>
-            <div className='sidebar-head d-flex align-items-center justify-content-between'>
-                <Brand />
-                <a
-                    role='button'
-                    className='sidebar-toggler'
-                    aria-label='Sidebar toggler'
-                    onClick={toggleSidebar}
-                >
-                    <div className='d-none d-lg-block'>
-                        <RiMenuLine className='sidebar-menu-2' />
+        <>
+            {/* Overlay for mobile */}
+            <div 
+                className="sidebar-overlay d-lg-none" 
+                style={{
+                    display: document.body.classList.contains('sidebar-open') ? 'block' : 'none'
+                }}
+            />
+            
+            {/* Sidebar */}
+            <div ref={sidebarRef}>
+                <aside id='sidebar' data-sidebar={sidebarSkin}>
+                    <div className='sidebar-head d-flex align-items-center justify-content-between' style={{ position: 'relative' }}>
+                        <Brand />
+                        <a
+                            role='button'
+                            className='sidebar-toggler d-lg-none'
+                            aria-label='Sidebar close'
+                            onClick={toggleSidebar}
+                            style={{
+                                position: 'absolute',
+                                top: 16,
+                                right: 16,
+                                zIndex: 2,
+                                background: 'transparent',
+                                border: 'none',
+                                padding: 0,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </a>
                     </div>
-                    <RiMenuFoldLine className='d-lg-none' />
-                </a>
-            </div>
 
-            <Scrollbar className='sidebar-body'>
-                <nav className='navbar d-block p-0'>
-                    <ul className='navbar-nav'>
-                        {filteredNavbar.map((nav: any, index) => (
-                            <li
-                                key={index}
-                                className={classNames(
-                                    'nav-item',
-                                    nav.title && 'nav-item--head'
-                                )}
+                    <Scrollbar className='sidebar-body'>
+                        <nav className='navbar d-block p-0'>
+                            <ul className='navbar-nav'>
+                                {filteredNavbar.map((nav: any, index) => (
+                                    <li
+                                        key={index}
+                                        className={classNames(
+                                            'nav-item',
+                                            nav.title && 'nav-item--head'
+                                        )}
+                                    >
+                                        {navLink(nav)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
+                    </Scrollbar>
+
+                    <div className='sidebar-foot'>
+                        {shouldShowAddMusicButton && (
+                            <Link 
+                                href='/add' 
+                                className='btn btn-primary d-flex'
+                                onClick={closeSidebar} // Close sidebar when button is clicked
                             >
-                                {navLink(nav)}
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
-            </Scrollbar>
-
-            <div className='sidebar-foot'>
-                {shouldShowAddMusicButton && (
-                    <Link href='/add' className='btn btn-primary d-flex'>
-                        <div className='btn__wrap'>
-                            <RiMusicFill />
-                            <span>{navbar('add_music')}</span>
-                        </div>
-                    </Link>
-                )}
+                                <div className='btn__wrap'>
+                                    <RiMusicFill />
+                                    <span>{navbar('add_music')}</span>
+                                </div>
+                            </Link>
+                        )}
+                    </div>
+                </aside>
             </div>
-        </aside>
-    );
-};
+        </>
+    )
+}
 
-Sidebar.displayName = 'Sidebar';
-export default Sidebar;
+Sidebar.displayName = 'Sidebar'
+export default Sidebar

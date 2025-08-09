@@ -140,7 +140,7 @@ const RegisterProducerForm: React.FC = () => {
                     {auth('register_user')}
                 </Link>
             </div>
-            <div className='mb-5'>
+            {/* <div className='mb-5'>
                 <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                     <span className='btn__wrap'>
                         <RiGoogleFill />
@@ -149,7 +149,7 @@ const RegisterProducerForm: React.FC = () => {
                         </span>
                     </span>
                 </button>
-            </div>
+            </div> */}
             <div className='mb-4'>
                 <div className='auth__or mx-auto fw-medium'></div>
             </div>
@@ -261,32 +261,7 @@ const RegisterProducerForm: React.FC = () => {
                 />
                 {<ErrorHandler root={errors?.password as any} />}
             </div>
-            <div className='row mb-3'>
-                <div className='col-md-6'>
-                    <Input
-                        label={auth('city')}
-                        id='city'
-                        className={classNames(
-                            'form-control',
-                            errors?.city && 'is-invalid'
-                        )}
-                        {...register('city', { required: "City is required" })}
-                    />
-                    {<ErrorHandler root={errors?.city as any} />}
-                </div>
-                <div className='col-md-6'>
-                    <Input
-                        label={auth('state')}
-                        id='state'
-                        className={classNames(
-                            'form-control',
-                            errors?.state && 'is-invalid'
-                        )}
-                        {...register('state', { required: "State is required" })}
-                    />
-                    {<ErrorHandler root={errors?.state as any} />}
-                </div>
-            </div>
+
             <div className='mb-4'>
                 <div className='form-check mb-0'>
                     <input
@@ -308,7 +283,7 @@ const RegisterProducerForm: React.FC = () => {
                 <button
                     type='submit'
                     className={classNames(
-                        'btn btn-primary w-100',
+                        'btn btn-primary w-100 text-white',
                         (isSubmitting || regStatus === 'loading') && 'btn-loading'
                     )}
                     disabled={isSubmitting || regStatus === 'loading'}

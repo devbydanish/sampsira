@@ -87,14 +87,14 @@ const LoginForm: React.FC = () => {
                 </div>
             )}
             <div className='mb-5'>
-                <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
+                {/* <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                     <span className='btn__wrap'>
                         <RiGoogleFill />
                         <span className={replaceClassName('ms-2')}>
                             Login with Google
                         </span>
                     </span>
-                </button>
+                </button> */}
             </div>
             <div className='mb-4'>
                 <div className='auth__or mx-auto fw-medium'></div>
@@ -147,7 +147,7 @@ const LoginForm: React.FC = () => {
                     type='submit' 
                     disabled={status === 'loading'}
                     className={classNames(
-                        'btn btn-primary w-100 btn-loading',
+                        'btn btn-primary w-100 btn-loading text-white',
                         status === 'loading' && 'active'
                     )}
                 >

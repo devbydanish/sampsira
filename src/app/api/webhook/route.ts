@@ -1,6 +1,6 @@
+import { getCreditsForProductId } from '@/utils/stripe-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getCreditsForProductId } from '@/utils/stripe-helpers';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 async function verifyStripeSignature(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature') as string;
-  
+
   try {
     const event = stripe.webhooks.constructEvent(
       body,
@@ -27,7 +27,7 @@ async function verifyStripeSignature(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // Verify the webhook signature
   const { event, error } = await verifyStripeSignature(request);
-  
+
   if (error) {
     console.error(error);
     return NextResponse.json({ error }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
           if (!userId) {
             throw new Error('No userId found in session metadata');
           }
-          
+
           if (isSubscription) {
             await updateUserSubscription(userId, session);
           } else {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         }
         break;
       }
-      
+
       case 'customer.subscription.created': {
         console.log('customer.subscription.created');
         const subscription = event!.data.object as Stripe.Subscription;
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         }
         break;
       }
-      
+
       case 'customer.subscription.updated': {
         console.log('customer.subscription.updated');
         const subscription = event!.data.object as Stripe.Subscription;
@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
         await handleSubscriptionUpdate(subscription);
         break;
       }
-      
+
       case 'customer.subscription.deleted': {
         console.log('customer.subscription.deleted');
         const subscription = event!.data.object as Stripe.Subscription;
         await handleSubscriptionCancellation(subscription);
         break;
       }
-      
+
       case 'invoice.payment_succeeded': {
         console.log('invoice.payment_succeeded');
         const invoice = event!.data.object as Stripe.Invoice;
@@ -94,18 +94,18 @@ export async function POST(request: NextRequest) {
         }
         break;
       }
-      
+
       case 'invoice.payment_failed': {
         console.log('invoice.payment_failed');
         const invoice = event!.data.object as Stripe.Invoice;
         await handleInvoicePaymentFailure(invoice);
         break;
       }
-      
+
       default:
         console.log(`Unhandled event type: ${event!.type}`);
     }
-    
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
@@ -123,17 +123,17 @@ async function findUserByCustomerId(customerId: string) {
       },
     }
   );
-  
+
   if (!userResponse.ok) {
     throw new Error('Failed to fetch user data');
   }
-  
+
   const userData = await userResponse.json();
-  
+
   if (!userData || userData.length === 0) {
     throw new Error('User not found');
   }
-  
+
   return userData[0];
 }
 
@@ -142,7 +142,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     console.log("Subscription in creation: ", subscription);
     const user = await findUserByCustomerId(subscription.customer as string);
     console.log("User data in creation: ", user);
-    
+
     // Update user subscription details only - credits are handled by checkout.session.completed
     const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
       method: 'PUT',
@@ -158,7 +158,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
         firstSubscriptionDate: user.firstSubscriptionDate || new Date().toISOString(),
       }),
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to update user subscription status');
     }
@@ -171,7 +171,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   try {
     const user = await findUserByCustomerId(subscription.customer as string);
-    
+
     // Update subscription status
     await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
       method: 'PUT',
@@ -193,7 +193,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
   try {
     if (!(invoice as any).subscription) return;
-    
+
     const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
     const user = await findUserByCustomerId(invoice.customer as string);
 
@@ -219,11 +219,11 @@ async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
           }
         }),
       });
-      
+
       if (!transactionResponse.ok) {
         throw new Error('Failed to create renewal credit transaction');
       }
-      
+
       // Update user subscription details
       await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
         method: 'PUT',
@@ -261,7 +261,17 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
   try {
     // Get subscription ID from the session
     const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-    
+
+    const creditsToAdd = getCreditsForProductId(session.metadata?.productId as string);
+
+    console.log("creditsToAdd", creditsToAdd);
+
+    if (creditsToAdd <= 0) {
+      console.error('Could not determine credits to add for product ID:', session.metadata?.productId);
+      throw new Error('Could not determine credits to add');
+    }
+
+
     // Create credit transaction entry for subscription
     const transactionResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/credit-transactions`, {
       method: 'POST',
@@ -272,7 +282,7 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
       body: JSON.stringify({
         data: {
           users_permissions_user: userId,
-          amount: 100, // Monthly subscription credits
+          amount: creditsToAdd, // Monthly subscription credits
           type: 'subscription',
           stripePaymentIntentId: session.payment_intent as string,
           status: 'completed',
@@ -281,28 +291,28 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
         }
       }),
     });
-    
+
     if (!transactionResponse.ok) {
       console.error('Failed to create subscription credit transaction:', await transactionResponse.text());
       throw new Error('Failed to create subscription credit transaction');
     }
-    
+
     // Get current user data
     const userResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       headers: {
         'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
       },
     });
-    
+
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user data');
     }
-    
+
     const userData = await userResponse.json();
-    
+
     // For first-time subscribers, we need to ensure we handle any existing sub_credits
     const existingSubCredits = userData.sub_credits || 0;
-    
+
     // Update user in Strapi
     const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       method: 'PUT',
@@ -317,15 +327,15 @@ async function updateUserSubscription(userId: string, session: Stripe.Checkout.S
         subscribedUntil: new Date((subscription as any).current_period_end * 1000).toISOString(),
         // For first-time subscribers, add 100 new credits to any existing sub_credits
         // This handles cases where they had leftover sub_credits from a previous subscription
-        sub_credits: existingSubCredits + 100,
+        sub_credits: existingSubCredits + creditsToAdd,
         firstSubscriptionDate: userData.firstSubscriptionDate || new Date().toISOString(),
       }),
     });
-    
+
     if (!response.ok) {
       throw new Error('Failed to update user subscription status');
     }
-    
+
     console.log('Successfully updated subscription and created transaction record');
   } catch (error) {
     console.error('Error updating user subscription:', error);
@@ -337,37 +347,39 @@ async function addCreditsToUser(userId: string, session: Stripe.Checkout.Session
   try {
     // Get the line items from the session
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-    
+
     // Determine the number of credits to add based on the product
     let creditsToAdd = 0;
     let productId = session.metadata?.productId;
-    
+
+    console.log("productId", productId);
+
     // Get credits using our helper function
     if (productId) {
       creditsToAdd = getCreditsForProductId(productId);
     }
-    
+
     if (creditsToAdd <= 0) {
       console.error('Could not determine credits to add for product ID:', productId);
       throw new Error('Could not determine credits to add');
     }
-    
+
     console.log(`Adding ${creditsToAdd} credits for product ID: ${productId}`);
-    
+
     // Get current user credits
     const userResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       headers: {
         'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
       },
     });
-    
+
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user data');
     }
-    
+
     const userData = await userResponse.json();
     const currentCredits = userData.credits || 0;
-    
+
     // Create credit transaction entry
     const transactionResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/credit-transactions`, {
       method: 'POST',
@@ -387,12 +399,12 @@ async function addCreditsToUser(userId: string, session: Stripe.Checkout.Session
         }
       }),
     });
-    
+
     if (!transactionResponse.ok) {
       console.error('Failed to create credit transaction:', await transactionResponse.text());
       throw new Error('Failed to create credit transaction');
     }
-    
+
     // Update user in Strapi with new credits
     const updateResponse = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       method: 'PUT',
@@ -404,11 +416,11 @@ async function addCreditsToUser(userId: string, session: Stripe.Checkout.Session
         credits: currentCredits + creditsToAdd,
       }),
     });
-    
+
     if (!updateResponse.ok) {
       throw new Error('Failed to update user credits');
     }
-    
+
     console.log('Successfully added credits and created transaction record');
   } catch (error) {
     console.error('Error adding credits to user:', error);
@@ -427,19 +439,19 @@ async function handleSubscriptionCancellation(subscription: Stripe.Subscription)
         },
       }
     );
-    
+
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user data');
     }
-    
+
     const userData = await userResponse.json();
-    
+
     if (!userData || userData.length === 0) {
       throw new Error('User not found for subscription');
     }
-    
+
     const userId = userData[0].id;
-    
+
     // Update subscription status
     await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       method: 'PUT',
@@ -454,7 +466,7 @@ async function handleSubscriptionCancellation(subscription: Stripe.Subscription)
         // They will remain but won't be usable until subscription is renewed
       }),
     });
-    
+
     console.log('Subscription cancelled for user:', userId);
   } catch (error) {
     console.error('Error handling subscription cancellation:', error);
@@ -466,7 +478,7 @@ async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
   try {
     // Find the user with this subscription
     if (!(invoice as any).subscription) return;
-    
+
     const userResponse = await fetch(
       `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users?filters[subscriptionId][$eq]=${(invoice as any).subscription}`,
       {
@@ -475,19 +487,19 @@ async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
         },
       }
     );
-    
+
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user data');
     }
-    
+
     const userData = await userResponse.json();
-    
+
     if (!userData || userData.length === 0) {
       throw new Error('User not found for subscription');
     }
-    
+
     const userId = userData[0].id;
-    
+
     // Update subscription status to reflect payment failure
     await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${userId}`, {
       method: 'PUT',
@@ -499,10 +511,10 @@ async function handleInvoicePaymentFailure(invoice: Stripe.Invoice) {
         subscriptionStatus: 'past_due',
       }),
     });
-    
+
     // You might also want to send a notification email to the user
   } catch (error) {
     console.error('Error handling invoice payment failure:', error);
     throw error;
   }
-} 
+}

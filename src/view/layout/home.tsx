@@ -1,10 +1,4 @@
-/**
- * @name Home
- * @file home.tsx
- * @description common component for music pages section
- */
 "use client"
-
 
 // Modules
 import React, { useMemo } from 'react'
@@ -35,40 +29,21 @@ interface Props {
 }
 
 const propTypes = {
-    /**
-     * Set sound kits data
-     */
     soundKits: PropTypes.array.isRequired,
-
-    /**
-     * Set Producers data
-     */
     Producers: PropTypes.array.isRequired,
-
-
-    
-    /**
-     * Set tracks data
-     */
     tracks: PropTypes.array.isRequired,
-
-
 }
-
 
 const Home: React.FC<Props> = ({
     soundKits,
     Producers,
     tracks
 }) => {
-
     const locale = useTranslations()
     const footer = useTranslations('footer')
-    console.log(tracks)
-    
+
     // Create genre-specific track lists
     const genreTabs = useMemo(() => {
-        // Define genres we want to display
         const genreIds = [
             'reggaeton',
             'trap',
@@ -79,26 +54,19 @@ const Home: React.FC<Props> = ({
             'jersey_club',
             'dancehall',
             'afrobeat',
+            'amapiano',
+            'house',
+            'pop',
+            'randb'
         ];
         
-        // Create tabs with filtered tracks for each genre
         return genreIds.map(genreId => {
-            // Filter tracks that have this genre
             const genreTracks = tracks.filter((track: TrackTypes) => 
                 track.genre.some(g => 
                     g.name.toLowerCase() === genreId.toLowerCase()
                 )
             );
             
-            // If no tracks found for this genre, use a maximum of 5 random tracks 
-            // as a fallback (but only if the genre is not reggaeton)
-            // const trackList = genreId === 'reggaeton' 
-            //     ? genreTracks 
-            //     : (genreTracks.length > 0 
-            //         ? genreTracks 
-            //         : [...tracks].slice(0, 5));
-            
-            // // Limit to 5 tracks per genre
             const limitedTracks = genreTracks;
             
             return {
@@ -109,18 +77,14 @@ const Home: React.FC<Props> = ({
         });
     }, [tracks, locale]);
 
-    // 
-	// Divide sound kits data into two part to set a design.
-	const divide = Math.ceil(soundKits.length / 2)
-	const soundKitList = []
-	soundKitList.push([...soundKits].slice(0, divide))
-	soundKitList.push([...soundKits].slice(-divide))
-
+    // Divide sound kits data into two parts to set a design.
+    const divide = Math.ceil(soundKits.length / 2)
+    const soundKitList = []
+    soundKitList.push([...soundKits].slice(0, divide))
+    soundKitList.push([...soundKits].slice(-divide))
 
     return (
-        // Under hero [[ Find at scss/framework/hero.scss ]]
         <div className='under-hero container'>
-            
             <Section 
                 title={title(locale, 'new_release_title')}
                 subtitle={locale('new_release_subtitle')}
@@ -130,8 +94,8 @@ const Home: React.FC<Props> = ({
                 slideView={5}
                 navigation
                 autoplay
+                isNewReleases={true}
             />
-
 
             <Section 
                 title={title(locale, 'feature_Producers_title')}
@@ -216,39 +180,7 @@ const Home: React.FC<Props> = ({
                 </div>
             </div>
 
-            <section className='section'>
-                {/* <div className='section__head'>
-                    <div className='flex-grow-1'>
-                        <span className='section__subtitle'>{locale('top_sound_kits_subtitle')}</span>
-                        <h3
-                            className='mb-0'
-                            dangerouslySetInnerHTML={{__html: title(locale, 'top_sound_kits_title')}}
-                        />
-                    </div>
-                </div> */}
-                {/* List [[ Find at scss/components/list.scss ]] */}
-                <div className='list list--lg list--order'>
-                    <div className='row'>
-                        {soundKitList.map((item: any, index: number) => (
-                            <div key={index} className='col-xl-6'>
-                                {item.map((soundKit: SoundKitTypes) => (
-                                    <TrackList
-                                        key={soundKit.id}
-                                        data={soundKit}
-                                        download
-                                        dropdown
-                                        like
-                                        link
-                                    />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             <section className='container'>
-                {/* Newsletter [[ Find at scss/base/core.scss ]] */}
                 <div className='newsletter text-white'>
                     <div className='col-xl-7 col-lg-10 fs-5 mx-auto text-center'>
                         <h2 className='text-white'>
@@ -256,7 +188,11 @@ const Home: React.FC<Props> = ({
                             <span className='newsletter__title-text'>{BRAND.name}</span>
                         </h2>
                         <p>{footer('description')}</p>
-                        <Link href='/auth/register' className='btn btn-lg btn-white mt-3'>
+                        <Link
+                            href='/auth/register'
+                            className='btn btn-lg mt-3'
+                            style={{ background: '#fff', color: '#000' }}
+                        >
                             {locale('register_now')}
                         </Link>
                     </div>

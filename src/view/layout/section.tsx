@@ -1,10 +1,4 @@
-/**
- * @name Section
- * @file section.tsx
- * @description common component for music pages section
- */
 "use client"
-
 
 // Modules
 import React from 'react'
@@ -28,6 +22,7 @@ extends Omit<CarouselProps, 'Component'> {
     href?: string,
     subtitle?: string,
     title: string,
+    isNewReleases?: boolean,
 }
 
 const propTypes = {
@@ -51,25 +46,26 @@ const propTypes = {
      */
     title: PropTypes.string.isRequired,
 
+    /**
+     * Indicate if this section is New Releases
+     */
+    isNewReleases: PropTypes.bool,
 }
 
-
-const Section: React.FC<Props> = (
-    {
-        card,
-        data,
-        href,
-        subtitle,
-        slideView,
-        title,
-        ...props
-    }
-) => {
+const Section: React.FC<Props> = ({
+    card,
+    data,
+    href,
+    subtitle,
+    slideView,
+    title,
+    isNewReleases = false,
+    ...props
+}) => {
     
     const locale = useTranslations()
     let cardType = null
     let cardProps = null
-
 
     const sectionHead = () => {
         return (
@@ -112,11 +108,9 @@ const Section: React.FC<Props> = (
                     percentage / 2 + '%'
                 )
             }
-            
         }
     }
 
-    // 
     // Set card component element & props.
     if (card === 'avatar') {
         cardType = AvatarCard
@@ -142,10 +136,10 @@ const Section: React.FC<Props> = (
             like: true,
             play: card === 'track',
             playlist: card === 'track',
-            queue: card === 'track'
+            queue: card === 'track',
+            newRelease: isNewReleases
         }
     }
-
 
     return (
         // Section [[ Find at scss/framework/section.scss ]]
@@ -162,7 +156,6 @@ const Section: React.FC<Props> = (
         </section>
     )
 }
-
 
 Section.propTypes = propTypes as any
 Section.displayName = 'Section'

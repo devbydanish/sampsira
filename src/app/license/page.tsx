@@ -44,7 +44,7 @@ const LicensePage = () => {
         <div className="container" style={{ marginTop: '100px' }}>
             <div className="row justify-content-center">
                 <div className="col-lg-8">
-                    <h1 className="text-white mb-4">License Request</h1>
+                    <h1 className="text-white mb-4">Sample Clearance Request</h1>
                     
                     <div className="text-white mb-4">
                         <p>Please fill out this form to request a license for your purchased sample. You'll need to:</p>

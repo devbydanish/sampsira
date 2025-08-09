@@ -122,16 +122,13 @@ const RegisterForm: React.FC = () => {
     });
 
     return (
-        <div className="container">
-            <div className="row justify-content-center">
-                <div className="col-lg-6">
-                    <form className='mt-5' onSubmit={onSubmit}>
+        <form className='mt-5' onSubmit={onSubmit}>
                         <div className="mb-4">
                             <Link href="/auth/register-producer" className="d-block mb-2">
-                                Register as a Producer
+                                Register as a Sample Maker
                             </Link>
                         </div>
-                        <div className='mb-5'>
+                        {/* <div className='mb-5'>
                             <button type='button' className='btn btn-white w-100' onClick={signInWithGoogle}>
                                 <span className='btn__wrap'>
                                     <RiGoogleFill />
@@ -140,7 +137,7 @@ const RegisterForm: React.FC = () => {
                                     </span>
                                 </span>
                             </button>
-                        </div>
+                        </div> */}
                         <div className='mb-4'>
                             <div className='auth__or mx-auto fw-medium'></div>
                         </div>
@@ -252,7 +249,7 @@ const RegisterForm: React.FC = () => {
                             <button
                                 type='submit'
                                 className={classNames(
-                                    'btn btn-primary w-100',
+                                    'btn btn-primary w-100 text-white',
                                     (isSubmitting || regStatus === 'loading') && 'btn-loading'
                                 )}
                                 disabled={isSubmitting || regStatus === 'loading'}
@@ -263,10 +260,7 @@ const RegisterForm: React.FC = () => {
                         <p>{auth('register_text')} <br />
                             <Link href='/auth/login' className='fw-medium'>{auth('login')}</Link>
                         </p>
-                    </form>
-                </div>
-            </div>
-        </div>
+        </form>
     )
 }
 

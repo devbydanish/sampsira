@@ -187,7 +187,6 @@ export const fetchTracks = createAsyncThunk(
                         name: attrs.producer.data.attributes.username
                     }] : [],
                     type: 'track',
-                    duration: '0:00',
                     href: `/tracks/${item.id}`
                 };
 
@@ -267,7 +266,7 @@ export const fetchProducers = createAsyncThunk(
                     name: user.username.toLowerCase(),
                     displayName: user.displayName || user.username,
                     type: 'producer',
-                    cover: user.img ? process.env.NEXT_PUBLIC_STRAPI_URL + user.img.url : '/images/cover/large/1.jpg',
+                    cover: user.img ? process.env.NEXT_PUBLIC_STRAPI_URL + user.img.url : '/images/users/default.jpg',
                     href: `/producers/${user.username.toLowerCase()}`,
                     isProducer: true,
                     tracks: user.tracks || [],
@@ -291,6 +290,17 @@ export const fetchGenres = createAsyncThunk(
     'data/fetchGenres',
     async (_, { getState, rejectWithValue }) => {
         try {
+            // Note: The genres API endpoint doesn't exist yet in the Strapi backend
+            // Instead, we're using the genre information from the tracks schema
+            // which defines genre as an enumeration
+            
+            // TODO: Future improvement - Extract unique genres from tracks API
+            // 1. Fetch all tracks
+            // 2. Extract unique genre values
+            // 3. Create genre objects with appropriate structure
+            // This would allow showing real genres from Strapi instead of mock data
+            
+            console.info('Using mock genre data as the API endpoint is not available');
             const mockGenres = (await import('../../core/mock/genres.json')).default;
             return mockGenres.data;
         } catch (error: any) {
@@ -303,6 +313,17 @@ export const fetchMoods = createAsyncThunk(
     'data/fetchMoods',
     async (_, { getState, rejectWithValue }) => {
         try {
+            // Note: The moods API endpoint doesn't exist yet in the Strapi backend
+            // Instead, we're using the mood information from the tracks schema
+            // which defines moods as a string field
+            
+            // TODO: Future improvement - Extract unique moods from tracks API
+            // 1. Fetch all tracks
+            // 2. Extract unique mood values from the comma-separated moods strings
+            // 3. Create mood objects with appropriate structure
+            // This would allow showing real moods from Strapi instead of mock data
+            
+            console.info('Using mock mood data as the API endpoint is not available');
             const mockMoods = (await import('../../core/mock/moods.json')).default;
             return mockMoods.data;
         } catch (error: any) {

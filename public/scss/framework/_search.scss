@@ -26,6 +26,12 @@
         @include direction(padding-left $search-input-padding-right);
         box-shadow: none !important;
     }
+    
+    // Specific class for search input to maintain consistent height
+    .search-input {
+        height: auto !important;
+        min-height: auto !important;
+    }
 }
 
 // Search

@@ -89,4 +89,14 @@ export interface FeatureTypes {
     title?: string;
 }
 
+export interface EventTypes {
+    id: number;
+    attendees: Array<{
+        id: number;
+        name: string;
+        cover?: string;
+    }>;
+    totalAttendee?: number;
+}
+
 export type { BaseUserTypes };

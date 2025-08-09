@@ -74,22 +74,22 @@ interface Sample {
     }
 }
 
-interface SoundKit {
-    id: number;
-    attributes: {
-        title: string;
-        cover: Media;
-        producer: {
-            data: {
-                id: number;
-                attributes: {
-                    username: string;
-                    displayName: string;
-                }
-            }
-        }
-    }
-}
+// interface SoundKit {
+//     id: number;
+//     attributes: {
+//         title: string;
+//         cover: Media;
+//         producer: {
+//             data: {
+//                 id: number;
+//                 attributes: {
+//                     username: string;
+//                     displayName: string;
+//                 }
+//             }
+//         }
+//     }
+// }
 
 interface Producer {
     id: number;
@@ -121,10 +121,15 @@ interface Producer {
 interface SearchResults {
     samples: Sample[];
     producers: Producer[];
-    soundKits: SoundKit[];
+    // soundKits: SoundKit[];
 }
 
 const Search: React.FC = () => {
+    const getTrackUrl = (track: Sample) => {
+        const producerName = track.attributes.producer.data.attributes.username.toLowerCase()
+        const trackTitle = track.attributes.title.toLowerCase()
+        return `/producers/${encodeURIComponent(producerName)}/${encodeURIComponent(trackTitle)}`
+    }
     
     const pathname = usePathname()
     const {replaceClassName} = useTheme()
@@ -137,6 +142,7 @@ const Search: React.FC = () => {
         producers: []
     })
     const [isLoading, setIsLoading] = useState(false)
+    const [activeTab, setActiveTab] = useState<null | 'samples' | 'producers'>(null)
     const locale = useTranslations()
     const sidebar = useTranslations('sidebar')
 
@@ -157,7 +163,7 @@ const Search: React.FC = () => {
         const initialSearchData: SearchResults = {
             samples: [],
             producers: [],
-            soundKits: []
+            // soundKits: []
         };
 
         try {
@@ -187,12 +193,12 @@ const Search: React.FC = () => {
                 console.error('Failed to fetch tracks:', tracksResponse.statusText);
             }
 
-            if (soundKitResponse.ok) {
-                const data = await soundKitResponse.json();
-                searchData.soundKits = data.data;
-            } else {
-                console.error('Failed to fetch sound kits:', soundKitResponse.statusText);
-            }
+            // if (soundKitResponse.ok) {
+            //     const data = await soundKitResponse.json();
+            //     searchData.soundKits = data.data;
+            // } else {
+            //     console.error('Failed to fetch sound kits:', soundKitResponse.statusText);
+            // }
 
             if (producersResponse.ok) {
                 const data = await producersResponse.json();
@@ -273,8 +279,8 @@ const Search: React.FC = () => {
                 </label>
                 <input
                     id='search_input'
-                    className='form-control form-control-sm'
-                    placeholder='Search for samples, sound kits, producers...'
+                    className='form-control form-control-sm search-input'
+                    placeholder='Search for samples and producers...'
                     value={searchInput}
                     onChange={handleSearchInput}
                     onClick={handleClick}
@@ -288,14 +294,26 @@ const Search: React.FC = () => {
                 className='search pb-3'
             >
                 <div className='search__head'>
-                    <button type='button' className='btn btn-sm btn-light-primary active'>{locale('samples')}</button>
-                    <button type='button' className='btn btn-sm btn-light-primary'>{sidebar('sound_kits')}</button>
-                    <button type='button' className='btn btn-sm btn-light-primary'>{sidebar('producers')}</button>
+                    <button
+                        type='button'
+                        className={`btn btn-sm btn-light-primary${activeTab === 'samples' ? ' active' : ''}`}
+                        onClick={() => setActiveTab(activeTab === 'samples' ? null : 'samples')}
+                    >
+                        {locale('samples')}
+                    </button>
+                    {/* <button type='button' className='btn btn-sm btn-light-primary'>{sidebar('sound_kits')}</button> */}
+                    <button
+                        type='button'
+                        className={`btn btn-sm btn-light-primary${activeTab === 'producers' ? ' active' : ''}`}
+                        onClick={() => setActiveTab(activeTab === 'producers' ? null : 'producers')}
+                    >
+                        {sidebar('producers')}
+                    </button>
                 </div>
                 <Scrollbar className='flex-1'>
                     <div className='search__body'>
                         {/* Samples Section */}
-                        {(isLoading || searchResults.samples.length > 0) && (
+                        {(activeTab === null || activeTab === 'samples') && (isLoading || searchResults.samples.length > 0) && (
                             <div className='mb-4'>
                                 <div className='mb-3'>
                                     <span className='search__title text-white'>{locale('samples')}</span>
@@ -311,13 +329,13 @@ const Search: React.FC = () => {
                                         searchResults.samples.map((track: Sample) => (
                                             <div key={track.id} className='col-xl-3 col-md-4 col-sm-6'>
                                                 <div className='list__item'>
-                                                    <Link href={`/samples/${track.id}`} className='list__cover'>
+                                                    <Link href={`/producers/${encodeURIComponent(track.attributes.producer.data.attributes.username.toLowerCase())}/${encodeURIComponent(track.attributes.title.toLowerCase())}`} className='list__cover'>
                                                         <div className='ratio ratio-1x1'>
                                                             <Image
                                                                 src={
                                                                     track.attributes.cover?.data?.attributes.formats?.small?.url
                                                                     ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${track.attributes.cover.data.attributes.formats.small.url}`
-                                                                    : '/images/cover/small/default.jpg'
+                                                                    : '/images/users/audiodefault.jpg'
                                                                 }
                                                                 width={128}
                                                                 height={128}
@@ -326,12 +344,12 @@ const Search: React.FC = () => {
                                                         </div>
                                                     </Link>
                                                     <div className='list__content'>
-                                                        <Link href={`/samples/${track.id}`} className='list__title text-truncate'>
+                                                        <Link href={`/producers/${encodeURIComponent(track.attributes.producer.data.attributes.username.toLowerCase())}/${encodeURIComponent(track.attributes.title.toLowerCase())}`} className='list__title text-truncate'>
                                                             {track.attributes.title}
                                                         </Link>
                                                         <div className='list__subtitle text-truncate'>
-                                                            <Link href={`/producers/${track.attributes.producer.data.id}`}>
-                                                                {track.attributes.producer.data.attributes.displayName}
+                                                            <Link href={`/producers/${encodeURIComponent(track.attributes.producer.data.attributes.username.toLowerCase())}`}>
+                                                                {track.attributes.producer.data.attributes.username}
                                                             </Link>
                                                         </div>
                                                     </div>
@@ -344,7 +362,7 @@ const Search: React.FC = () => {
                         )}
                         
                         {/* Sound Kits Section */}
-                        {(isLoading || searchResults.soundKits.length > 0) && (
+                        {/* {(isLoading || searchResults.soundKits.length > 0) && (
                             <div className='mb-4'>
                                 <div className='mb-3'>
                                     <span className='search__title text-white'>{sidebar('sound_kits')}</span>
@@ -379,7 +397,7 @@ const Search: React.FC = () => {
                                                         </Link>
                                                         <div className='list__subtitle text-truncate'>
                                                             <Link href={`/producers/${kit.attributes.producer.data.id}`}>
-                                                                {kit.attributes.producer.data.attributes.displayName}
+                                                                {kit.attributes.producer.data.attributes.username}
                                                             </Link>
                                                         </div>
                                                     </div>
@@ -389,10 +407,10 @@ const Search: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-                        )}
+                        )} */}
                         
                         {/* Producers Section */}
-                        {(isLoading || searchResults.producers.length > 0) && (
+                        {(activeTab === null || activeTab === 'producers') && (isLoading || searchResults.producers.length > 0) && (
                             <div>
                                 <div className='mb-3'>
                                     <span className='search__title text-white'>{sidebar('producers')}</span>
@@ -408,12 +426,12 @@ const Search: React.FC = () => {
                                         searchResults.producers.map((producer: Producer) => (
                                             <div key={producer.id} className='col-xl-3 col-md-4 col-sm-6'>
                                                 <div className='list__item'>
-                                                    <Link href={`/producers/${producer.id}`} className='list__cover'>
+                                                    <Link href={`/producers/${producer.username}`} className='list__cover'>
                                                         <div className='ratio ratio-1x1'>
                                                             <Image
                                                                 src={producer.img?.url 
                                                                     ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${producer.img.url}`
-                                                                    : '/images/cover/large/default.jpg'
+                                                                    : '/images/users/default.jpg'
                                                                 }
                                                                 width={128}
                                                                 height={128}
@@ -422,9 +440,12 @@ const Search: React.FC = () => {
                                                         </div>
                                                     </Link>
                                                     <div className='list__content'>
-                                                        <Link href={`/producers/${producer.id}`} className='list__title text-truncate'>
-                                                            {producer.displayName}
+                                                        <Link href={`/producers/${producer.username}`} className='list__title text-truncate'>
+                                                            <span className='list__title text-truncate'>{producer.displayName}</span>
                                                         </Link>
+                                                        <div className='list__subtitle text-truncate'>
+                                                            <span className='list__subtitle text-truncate'>{producer.username}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -434,11 +455,12 @@ const Search: React.FC = () => {
                             </div>
                         )}
                         
-                        {/* No results message */}
-                        {!isLoading && searchInput && 
-                         searchResults.samples.length === 0 && 
-                         searchResults.soundKits.length === 0 && 
-                         searchResults.producers.length === 0 && (
+                        {/* No results message for active tab or all */}
+                        {!isLoading && searchInput && (
+                            ((activeTab === 'samples' && searchResults.samples.length === 0) ||
+                            (activeTab === 'producers' && searchResults.producers.length === 0) ||
+                            (activeTab === null && searchResults.samples.length === 0 && searchResults.producers.length === 0))
+                        ) && (
                             <div className="text-center py-4">
                                 <p>No results found for "{searchInput}"</p>
                             </div>

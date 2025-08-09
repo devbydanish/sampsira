@@ -33,6 +33,7 @@ export type ParamsTypes = {
 export type InfoType = {
     id: IdTypes
     name: string
+    username?: string
 }
 
 export type PersonTypes = InfoType & {

@@ -103,7 +103,7 @@ const Dropzone: React.FC<DropzoneProps> = ({
 
     const locale = useTranslations();
     if (!title) title = locale('drag_and_drop_upload');
-    if (!label) label = locale('cover_image');
+    if (!label) label = locale('choose_file');
 
     return (
         <div

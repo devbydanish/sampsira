@@ -77,7 +77,7 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
             </section>
 
             {/* Sound Kits Section */}
-            <section className='section mt-5'>
+            {/* <section className='section mt-5'>
                 <div className='section__head'>
                     <h3 className='mb-0' dangerouslySetInnerHTML={{__html: title(locale, 'sound_kits_title')}} />
                 </div>
@@ -103,7 +103,7 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                         )}
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* Genre Section */}
             <section className='section mt-5'>
@@ -114,7 +114,7 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                     {genres.length > 0 ? (
                         genres.map((genre, index) => (
                             <div key={index} className='col-xl-2 col-md-3 col-sm-4 col-6'>
-                                <a href={`/genre/${genre.id}`} className='cover cover--round scale-animation'>
+                                <a href={`/genre/${(genre as any).slug ? (genre as any).slug : genre.title?.toLowerCase().replace(/\s+/g, '-')}`} className='cover cover--round scale-animation'>
                                     <div className='cover__image'>
                                         <div className='ratio ratio-1x1'>
                                             <img
@@ -152,7 +152,7 @@ const Samples: React.FC<Props> = ({genres, moods, tracks, soundKits}) => {
                     {moods.length > 0 ? (
                         moods.map((mood, index) => (
                             <div key={index} className='col-xl-2 col-md-3 col-sm-4 col-6'>
-                                <a href={`/mood/${mood.id}`} className='cover cover--round scale-animation'>
+                                <a href={`/mood/${(mood as any).slug ? (mood as any).slug : mood.title?.toLowerCase().replace(/\s+/g, '-')}`} className='cover cover--round scale-animation'>
                                     <div className='cover__image'>
                                         <div className='ratio ratio-1x1'>
                                             <img

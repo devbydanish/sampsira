@@ -14,9 +14,14 @@ export interface CreditPlan {
  */
 export const CREDIT_PLANS: CreditPlan[] = [
   {
-    productId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_CREDITS || '',
-    credits: 100,
-    name: 'Basic Credits Package'
+    productId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MONTHLY_SUBSCRIPTION || '',
+    credits: 50,
+    name: 'Monthly Subscription'
+  },
+  {
+    productId: process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_YEARLY_SUBSCRIPTION || '',
+    credits: 600,
+    name: 'Yearly Subscription'
   }
   // Add more plans as needed
 ];
@@ -33,7 +38,8 @@ export function getCreditsForProductId(productId: string): number {
  * Validate if a product ID is for a subscription
  */
 export function isSubscriptionProductId(productId: string): boolean {
-  return productId === process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MONTHLY_SUBSCRIPTION;
+  return productId === process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MONTHLY_SUBSCRIPTION ||
+    productId === process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_YEARLY_SUBSCRIPTION;
 }
 
 /**
@@ -77,6 +83,6 @@ export function getStripeErrorMessage(errorCode: string): string {
     [STRIPE_ERROR_TYPES.PROCESSING_ERROR]: 'Payment processing error. Please try again.',
     [STRIPE_ERROR_TYPES.AUTHENTICATION_REQUIRED]: 'Additional authentication required. Please complete the verification.',
   };
-  
+
   return errorMessages[errorCode] || 'An unexpected error occurred. Please try again.';
-} 
+}

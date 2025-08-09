@@ -64,9 +64,9 @@ const ContactPage = () => {
         address: '123 Music Street, Studio City, CA 90210',
         hours: 'Monday - Friday: 9:00 AM - 6:00 PM (EST)',
         socialMedia: [
-            { name: 'Instagram', url: 'https://instagram.com/sampsira' },
-            { name: 'Facebook', url: 'https://facebook.com/sampsira' },
-            { name: 'TikTok', url: 'https://tiktok.com/sampsira' },
+            { name: 'Instagram', url: 'https://instagram.com/eccentricsounds_' },
+            // { name: 'Facebook', url: 'https://facebook.com/sampsira' },
+            // { name: 'TikTok', url: 'https://tiktok.com/sampsira' },
         ]
     }
 

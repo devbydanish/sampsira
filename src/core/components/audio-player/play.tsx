@@ -20,13 +20,15 @@ import { usePlayer } from '@/core/contexts/player'
 import { addClass, removeClass } from '@/core/utils'
 import { TrackTypes } from '@/core/types'
 
-interface Props 
+interface Props
 extends React.HTMLAttributes<HTMLButtonElement> {
     track?: TrackTypes
     playlist?: TrackTypes[]
     iconSize?: number
     playerButton?: boolean
     primaryButton?: boolean
+    isPlaying?: boolean
+    showPause?: boolean
 }
 
 const propTypes = {
@@ -65,6 +67,7 @@ const PlayButton: React.FC<Props> = (
         playerButton,
         primaryButton,
         track,
+        showPause,
         ...props
     }
 ) => {
@@ -83,8 +86,10 @@ const PlayButton: React.FC<Props> = (
         && !playerButton
         && isPlaying
 
-    const Icon = isPlayerButton || isTrackButton
-        ? RiPauseFill 
+    const Icon = (typeof showPause === "boolean"
+        ? showPause
+        : (isPlayerButton || isTrackButton))
+        ? RiPauseFill
         : RiPlayFill
 
     const buttonRef = useRef<HTMLButtonElement | null>(null)
@@ -143,7 +148,14 @@ const PlayButton: React.FC<Props> = (
             {...playlist && { id: 'play_all' }}
             {...props}
         >
-            <Icon size={iconSize} />
+            {Icon === RiPauseFill ? (
+                <svg width={iconSize || 32} height={iconSize || 32} viewBox="0 0 32 32">
+                    <rect x="7" y="6" width="6" height="20" rx="2" fill="#fff" />
+                    <rect x="19" y="6" width="6" height="20" rx="2" fill="#fff" />
+                </svg>
+            ) : (
+                <RiPlayFill size={iconSize || 32} color="#fff" />
+            )}
         </button>
     )
 }

@@ -35,7 +35,7 @@ const AvatarCard: React.FC<Props> = ({data}) => {
             <div className='avatar__image mx-auto'>
                 <Link href={data.href}>
                     <Image
-                        src={data.cover}
+                        src={data.cover || '/images/users/default.jpg'}
                         width={128}
                         height={128}
                         alt={data.name}

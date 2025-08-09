@@ -34,6 +34,12 @@
             transform: translate(-50%, -50%);
         }
     }
+// Purchase overlay/banner
+    .purchase-overlay {
+        border-bottom-left-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+        overflow: hidden;
+    }
 
     // List content
     .list__content {
@@ -146,4 +152,10 @@
             @include direction(margin-right $info-list-spacing-x);
         }
     }
+}
+// Add border radius to purchase overlay/banner to match thumbnail
+.purchase-overlay {
+    border-bottom-left-radius: $list-cover-border-radius;
+    border-bottom-right-radius: $list-cover-border-radius;
+    overflow: hidden;
 }

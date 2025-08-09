@@ -11,12 +11,13 @@ import MultiSelect from '@/core/components/multi-select'
 import { MOODS } from '@/core/constants/moods'
 import { KEYS } from '@/core/constants/keys'
 
-const allowedGenres = ['Reggaeton', 'Trap', 'Hip-Hop/Rap', 'Drill', 'Techno', 'Drum & Bass', 'Jersey Club', 'Dancehall', 'Afrobeat'];
+const allowedGenres = ['Reggaeton', 'Trap', 'Hip-Hop/Rap', 'Drill', 'Techno', 'Drum & Bass', 'Jersey Club', 'Dancehall', 'Afrobeat', 'Amapiano', 'House', 'Pop', 'R&B'];
 
 export interface TrackFormData {
     title: string;
     cover: File | null;
     audio: File | null;
+    stem: File[] | null;
     bpm: string;
     moods: string[];
     keys: string[];
@@ -73,6 +74,16 @@ const FilePreview: React.FC<{ file: File | null }> = ({ file }) => {
                     <source src={preview} type={file.type} />
                     Your browser does not support the audio element.
                 </audio>
+            </div>
+        );
+    }
+    
+    if (file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+        return (
+            <div className="mt-3">
+                <div className="alert alert-info">
+                    <strong>{file.name}</strong> ({Math.round(file.size / 1024 / 1024)}MB)
+                </div>
             </div>
         );
     }
@@ -150,6 +161,39 @@ const SongForm: React.FC<SongFormProps> = ({
                 <FilePreview file={audioFile} />
                 {errors.audio && (
                     <div className='invalid-feedback d-block'>{errors.audio.message}</div>
+                )}
+            </div>
+
+            <div className='col-12'>
+                <label className='form-label'>{locale('stem_files')}</label>
+                <Dropzone
+                    title={locale('drag_and_drop')}
+                    accept={{ 'application/zip': ['.zip'] }}
+                    maxFiles={1}
+                    disabled={isSubmitting}
+                    onDrop={(acceptedFiles) => {
+                        if (acceptedFiles.length > 0) {
+                            setValue('stem', acceptedFiles)
+                        }
+                    }}
+                    style={{ height: '150px' }}
+                    infoText="Upload stem files as ZIP (Max: 250MB)"
+                />
+                {(() => {
+                    const stemFiles = watch('stem');
+                    if (stemFiles && Array.isArray(stemFiles) && stemFiles.length > 0 && stemFiles[0]) {
+                        return (
+                            <div className="mt-2">
+                                <div className="alert alert-success">
+                                    <strong>{stemFiles[0].name}</strong> ({Math.round(stemFiles[0].size / 1024 / 1024)}MB)
+                                </div>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
+                {errors.stem && (
+                    <div className='invalid-feedback d-block'>{errors.stem.message}</div>
                 )}
             </div>
 

@@ -94,13 +94,19 @@ export const useProducers = (skipFetch = false) => {
 export const useGenres = (skipFetch = false) => {
   const dispatch = useAppDispatch();
   const { genres } = useAppSelector((state) => state.data);
-  const { token } = useAppSelector((state) => state.user);
+  // const { token } = useAppSelector((state) => state.user);
+  
+  // useEffect(() => {
+  //   if (token && !skipFetch) {
+  //     dispatch(fetchGenres());
+  //   }
+  // }, [dispatch, token, skipFetch]);
   
   useEffect(() => {
-    if (token && !skipFetch) {
+    if (!skipFetch) {
       dispatch(fetchGenres());
     }
-  }, [dispatch, token, skipFetch]);
+  }, [dispatch, skipFetch]);
   
   return {
     genres: genres.data,
@@ -112,13 +118,19 @@ export const useGenres = (skipFetch = false) => {
 export const useMoods = (skipFetch = false) => {
   const dispatch = useAppDispatch();
   const { moods } = useAppSelector((state) => state.data);
-  const { token } = useAppSelector((state) => state.user);
+  // const { token } = useAppSelector((state) => state.user);
+  
+  // useEffect(() => {
+  //   if (token && !skipFetch) {
+  //     dispatch(fetchMoods());
+  //   }
+  // }, [dispatch, token, skipFetch]);
   
   useEffect(() => {
-    if (token && !skipFetch) {
+    if (!skipFetch) {
       dispatch(fetchMoods());
     }
-  }, [dispatch, token, skipFetch]);
+  }, [dispatch, skipFetch]);
   
   return {
     moods: moods.data,

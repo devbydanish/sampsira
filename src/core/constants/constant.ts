@@ -43,15 +43,15 @@ export const NAVBAR: NavbarTypes[] = [
         icon: RiVoiceprintFill,
     },
     {
-        name: 'license',
+        name: 'sample_clearance',
         href: '/license',
         icon: RiFileListLine,
     },
-    {
-        name: 'about_us',
-        href: '/about',
-        icon: RiInformationLine,
-    },
+    // {
+    //     name: 'about_us',
+    //     href: '/about',
+    //     icon: RiInformationLine,
+    // },
     {
         name: 'contact_us',
         href: '/contact',
@@ -69,10 +69,10 @@ export const NAVBAR_LINK: NavLinkTypes[] = [
         name: 'Pricing',
         href: '/plan',
     },
-    {
-        name: 'About Us',
-        href: '/about'
-    },
+    // {
+    //     name: 'About Us',
+    //     href: '/about'
+    // },
     {
         name: 'Blog',
         href: '/blog'
@@ -151,26 +151,26 @@ export const LANGUAGES = [
 
 // Social links 
 export const SOCIAL: NavLinkTypes[] = [
-    {
-        name: 'Youtube',
-        icon: RiYoutubeLine,
-        href: '#'
-    },
+    // {
+    //     name: 'Youtube',
+    //     icon: RiYoutubeLine,
+    //     href: '#'
+    // },
     {
         name: 'Instagram',
         icon: RiInstagramLine,
         href: 'https://www.instagram.com/eccentricsounds_'
     },
-    {
-        name: 'Facebook',
-        icon: RiFacebookCircleLine,
-        href: '#'
-    },
-    {
-        name: 'X',
-        icon: RiTwitterXLine,
-        href: '#'
-    }
+    // {
+    //     name: 'Facebook',
+    //     icon: RiFacebookCircleLine,
+    //     href: '#'
+    // },
+    // {
+    //     name: 'X',
+    //     icon: RiTwitterXLine,
+    //     href: '#'
+    // }
 ]
 
 // Brand object

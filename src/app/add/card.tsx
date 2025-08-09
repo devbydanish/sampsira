@@ -29,7 +29,7 @@ interface SoundKitFormData {
     cover: File | null;
 }
 
-const allowedGenres = ['Reggaeton', 'Trap', 'Hip-Hop/Rap', 'Drill', 'Techno', 'Drum & Bass', 'Jersey Club', 'Dancehall', 'Afrobeat'];
+const allowedGenres = ['Reggaeton', 'Trap', 'Hip-Hop/Rap', 'Drill', 'Techno', 'Drum & Bass', 'Jersey Club', 'Dancehall', 'Afrobeat', 'Amapiano', 'House', 'Pop', 'R&B'];
 
 interface TrackState {
     id: string;
@@ -118,6 +118,7 @@ const SongCard: React.FC = () => {
             title: '',
             cover: null,
             audio: null,
+            stem: null,
             bpm: '',
             moods: [],
             keys: [],
@@ -159,8 +160,8 @@ const SongCard: React.FC = () => {
     }
 
     const tabs = [
-        { id: 'track', name: locale('upload_track') },
-        { id: 'sound_kit', name: locale('upload_sound_kit') }
+        { id: 'track', name: locale('upload_sample') },
+        // { id: 'sound_kit', name: locale('upload_sound_kit') }
     ]
 
     const handleTrackSubmit = async (formData: TrackFormData) => {
@@ -177,6 +178,13 @@ const SongCard: React.FC = () => {
                 throw new Error('File size exceeds maximum allowed')
             }
 
+            // Check stem file size if it exists
+            if (formData.stem && formData.stem.length > 0) {
+                if (formData.stem[0].size > MAX_FILE_SIZE) {
+                    throw new Error('Stem file size exceeds maximum allowed (250MB)')
+                }
+            }
+
             const token = localStorage.getItem('jwt')
             if (!token) {
                 throw new Error('Please log in to upload')
@@ -185,6 +193,14 @@ const SongCard: React.FC = () => {
             const uploadData = new FormData()
             uploadData.append('files.cover', formData.cover)
             uploadData.append('files.audio', formData.audio)
+            
+            // Add stem files if they exist
+            if (formData.stem && formData.stem.length > 0) {
+                formData.stem.forEach((file, index) => {
+                    uploadData.append(`files.stem`, file)
+                })
+            }
+            
             uploadData.append('data', JSON.stringify({
                 title: formData.title,
                 bpm: formData.bpm,
@@ -287,7 +303,7 @@ const SongCard: React.FC = () => {
                             <div className='mt-4 text-center'>
                                 <button
                                     type='submit'
-                                    className='btn btn-primary'
+                                    className='btn btn-primary text-white'
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? (

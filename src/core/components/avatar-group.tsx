@@ -43,7 +43,7 @@ const AvatarGroup: React.FC<Props> = ({data}) => {
                         <div key={attendee.id} className='avatar'>
                             <div className='avatar__image'>
                                 <Image 
-                                    src={attendee.cover}
+                                    src={attendee.cover || '/images/users/default.jpg'}
                                     width={128}
                                     height={128}
                                     alt={attendee.name}
