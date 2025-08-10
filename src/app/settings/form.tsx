@@ -27,6 +27,7 @@ import UserUploads from "./uploads";
 
 // Utilities
 import { ProfileTypes, SocialMediaAccountType } from "@/core/types";
+import Licenses from "./license";
 
 const ProfileForm: React.FC = () => {
   const { replaceClassName } = useTheme();
@@ -38,7 +39,8 @@ const ProfileForm: React.FC = () => {
     | "Subscription Plan"
     | "Delete Account"
     | "My Samples"
-    | "Purchase History";
+    | "Purchase History"
+    | "Licenses";
   const [activeTab, setActiveTab] = useState<ActiveTab>("Edit Profile");
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -110,6 +112,7 @@ const ProfileForm: React.FC = () => {
           "Delete Account",
           "My Samples",
           "Purchase History",
+          "Licenses",
         ].includes(storedTab)
       ) {
         setActiveTab(storedTab as ActiveTab);
@@ -295,6 +298,7 @@ const ProfileForm: React.FC = () => {
   }> = [
     { id: "edit_profile", name: "Edit Profile" },
     { id: "uploads", name: "My Samples", producerOnly: true },
+    { id: "licenses", name: "Licenses" },
     { id: "subscription_plan", name: "Subscription Plan" },
     { id: "purchases", name: "Purchase History" },
     { id: "account_security", name: "Account Security" },
@@ -711,13 +715,14 @@ const ProfileForm: React.FC = () => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+            Authorization: `Bearer ${currentUser?.jwt}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             password: newPassword,
-            passwordConfirmation: confirmPassword,
+            confirmPassword: newPassword,
             currentPassword: currentPassword,
+            identifier: currentUser?.email,
           }),
         }
       );
@@ -1208,6 +1213,14 @@ const ProfileForm: React.FC = () => {
           <div className="card">
             <div className="card-body">
               <UserUploads />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "Licenses" && (
+          <div className="card">
+            <div className="card-body">
+              <Licenses />
             </div>
           </div>
         )}

@@ -4,7 +4,7 @@ import { RiHeartFill } from "@remixicon/react";
 import Image from "next/image";
 import Link from "next/link";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Contexts
 import { useTheme } from "@/core/contexts/theme";
@@ -15,6 +15,10 @@ import TrackDropdown, { TrackDropdownProps } from "../dropdown";
 import StemsPurchaseModal from "../modals/stems-purchase-modal";
 
 // Utilities
+import {
+  fetchTrackPurchaseStatus,
+  getTrackOwnershipStatus,
+} from "@/core/utils/track-helpers";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -51,8 +55,13 @@ export default function TrackCard({
 }: TrackProps) {
   const { replaceClassName } = useTheme();
   const [showStemsModal, setShowStemsModal] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState<{
+    hasAudio: boolean;
+    hasStems: boolean;
+  }>({ hasAudio: false, hasStems: false });
   const user = useSelector((state: RootState) => state.user.user);
   const router = useRouter();
+
   const trackData = {
     ...data,
     id: data.id,
@@ -70,6 +79,27 @@ export default function TrackCard({
         : "/images/cover/default.jpg"),
     Producers: data.Producers || [],
   };
+
+  // Pull fine-grained purchase status from transactions and feed to helper
+  // This enables showing stems-only CTA when audio is already purchased
+  const ownershipStatus = getTrackOwnershipStatus(
+    trackData,
+    user,
+    purchaseStatus
+  );
+
+  // Load purchase status when user or track changes
+  useEffect(() => {
+    (async () => {
+      if (!user || !trackData?.id) {
+        setPurchaseStatus({ hasAudio: false, hasStems: false });
+        return;
+      }
+      const status = await fetchTrackPurchaseStatus(trackData.id);
+      setPurchaseStatus(status);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, trackData?.id]);
 
   const trackUrl = `/producers/${encodeURIComponent(trackData.Producers?.[0]?.name?.toLowerCase() || "")}/${encodeURIComponent(trackData.title.toLowerCase())}`;
 
@@ -95,8 +125,29 @@ export default function TrackCard({
     }
 
     const responseData = await response.json();
+
+    // Immediately refresh purchase status so UI updates without reload
+    try {
+      const status = await fetchTrackPurchaseStatus(trackData.id);
+      setPurchaseStatus(status);
+    } catch (err) {
+      console.warn("Failed to refresh purchase status after purchase", err);
+    }
     return responseData;
   };
+
+  const handlePurchaseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Don't open modal if track is owned or already purchased
+    if (ownershipStatus.buttonDisabled) {
+      return;
+    }
+
+    setShowStemsModal(true);
+  };
+
   return (
     <div className="cover cover--round scale-animation">
       {/* Cover head */}
@@ -144,14 +195,11 @@ export default function TrackCard({
         {!myUploads && newRelease && (
           <div className="purchase-overlay">
             <button
-              className="purchase-button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowStemsModal(true);
-              }}
+              className={`purchase-button ${ownershipStatus.buttonDisabled ? "disabled" : ""}`}
+              onClick={handlePurchaseClick}
+              disabled={ownershipStatus.buttonDisabled}
             >
-              Purchase Sample
+              {ownershipStatus.buttonText}
             </button>
           </div>
         )}
@@ -159,69 +207,45 @@ export default function TrackCard({
 
       {/* Cover foot */}
       <div className="cover__foot">
-        <div className="d-flex flex-column">
-          <Link
-            href={trackUrl}
-            className={`cover__title text-truncate text-white text-decoration-none hover-underline`}
-            style={{ color: "#fff" }}
-          >
-            {trackData.title}
-          </Link>
-          {myUploads ? (
-            <>
-              <div className="cover__subtitle text-truncate text-white small">
-                {trackData.genre && (
-                  <div>
-                    Genre:{" "}
-                    {Array.isArray(trackData.genre)
-                      ? trackData.genre.map((g: any) => g.name).join(", ")
-                      : trackData.genre}
-                  </div>
-                )}
-                {trackData.bpm && <div>BPM: {trackData.bpm}</div>}
-                {Array.isArray(trackData.keys) && trackData.keys.length > 0 && (
-                  <div>Keys: {trackData.keys.join(", ")}</div>
-                )}
-                {!Array.isArray(trackData.keys) && trackData.keys && (
-                  <div>Keys: {String(trackData.keys)}</div>
-                )}
-                {Array.isArray(trackData.moods) &&
-                  trackData.moods.length > 0 && (
-                    <div>Moods: {trackData.moods.join(", ")}</div>
-                  )}
-                {!Array.isArray(trackData.moods) && trackData.moods && (
-                  <div>Moods: {String(trackData.moods)}</div>
-                )}
-              </div>
-              <button
-                className="my-uploads-link-edit mt-2"
-                onClick={() => onEditSample && onEditSample(trackData)}
-              >
-                Edit
-              </button>
-            </>
-          ) : (
-            trackData.Producers &&
-            trackData.Producers.length > 0 && (
-              <div className="cover__subtitle text-truncate">
-                {trackData.Producers.map((producer: any, index: number) => {
-                  // Accept both InfoType and possible extended types with username
-                  const slug = producer.name
-                    ? encodeURIComponent(producer.name.toLowerCase())
-                    : undefined;
-                  return (
-                    <Link
-                      key={index}
-                      href={slug ? `/producers/${slug}` : "#"}
-                      className="text-secondary text-decoration-none hover-underline"
-                    >
-                      {producer.name}
-                      {index < trackData.Producers.length - 1 ? ", " : ""}
-                    </Link>
-                  );
-                })}
-              </div>
-            )
+        <div className="d-flex align-items-center justify-content-between">
+          <div className="cover__details">
+            <Link
+              href={trackUrl}
+              className={`cover__title hover-underline ${replaceClassName(
+                "text-dark"
+              )}`}
+            >
+              {trackData.title}
+            </Link>
+            {trackData.Producers && trackData.Producers.length > 0 && (
+              <p className="cover__subtitle text-muted">
+                {trackData.Producers.map((producer: any, index: number) => (
+                  <Link
+                    key={index}
+                    href={`/producers/${producer.name?.toLowerCase() || ""}`}
+                    className="hover-underline"
+                  >
+                    {producer.name}
+                    {trackData.Producers &&
+                    trackData.Producers.length - 1 === index
+                      ? ""
+                      : ", "}
+                  </Link>
+                ))}
+              </p>
+            )}
+          </div>
+          {myUploads && onEditSample && (
+            <button
+              className="my-uploads-link-edit"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEditSample(trackData);
+              }}
+            >
+              {editModeId === trackData.id ? "Cancel" : "Edit"}
+            </button>
           )}
         </div>
       </div>
@@ -276,6 +300,13 @@ export default function TrackCard({
         .purchase-button:hover {
           background: rgba(0, 0, 0, 0.8);
         }
+        .purchase-button.disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+        .purchase-button.disabled:hover {
+          background: rgba(0, 0, 0, 0.7);
+        }
         .cover__title {
           cursor: pointer;
         }
@@ -290,8 +321,17 @@ export default function TrackCard({
       <StemsPurchaseModal
         isOpen={showStemsModal}
         onClose={() => setShowStemsModal(false)}
-        onPurchaseWithStems={() => handlePurchase(7.5)}
-        onPurchaseAudioOnly={() => handlePurchase(2.5)}
+        onPurchaseWithStems={() =>
+          handlePurchase(
+            purchaseStatus.hasAudio && !purchaseStatus.hasStems ? 5 : 7.5
+          )
+        }
+        onPurchaseAudioOnly={
+          purchaseStatus.hasAudio ? undefined : () => handlePurchase(2.5)
+        }
+        showOnlyStemsOption={
+          purchaseStatus.hasAudio && !purchaseStatus.hasStems
+        }
       />
     </div>
   );

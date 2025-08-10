@@ -8,7 +8,9 @@ interface StemsPurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPurchaseWithStems: () => Promise<any>;
-  onPurchaseAudioOnly: () => Promise<any>;
+  onPurchaseAudioOnly?: () => Promise<any>;
+  // When true, only show the stems upgrade button (audio already purchased)
+  showOnlyStemsOption?: boolean;
 }
 
 const StemsPurchaseModal: React.FC<StemsPurchaseModalProps> = ({
@@ -16,6 +18,7 @@ const StemsPurchaseModal: React.FC<StemsPurchaseModalProps> = ({
   onClose,
   onPurchaseWithStems,
   onPurchaseAudioOnly,
+  showOnlyStemsOption = false,
 }) => {
   const [showDownload, setShowDownload] = React.useState(false);
 
@@ -23,28 +26,62 @@ const StemsPurchaseModal: React.FC<StemsPurchaseModalProps> = ({
     if (!isOpen) setShowDownload(false);
   }, [isOpen]);
 
-  const [track, setTrack] = React.useState<any>(null);
+  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [stemsUrl, setStemsUrl] = React.useState<string | null>(null);
+  const [licenseUrl, setLicenseUrl] = React.useState<string | null>(null);
 
   const handlePurchaseWithStems = async () => {
     const response = await onPurchaseWithStems();
     if (response.success) {
       setShowDownload(true);
-      setTrack(response.track_url);
+      setAudioUrl(response.track_url || null);
+      setStemsUrl(response.stems_url || null);
+      setLicenseUrl(response.licenseUrl || null);
     }
   };
 
   const handlePurchaseAudioOnly = async () => {
+    if (!onPurchaseAudioOnly) return;
     const response = await onPurchaseAudioOnly();
-
-    if (response.success) {
+    if (response?.success) {
       setShowDownload(true);
-      setTrack(response.track_url);
+      setAudioUrl(response.track_url || null);
+      setStemsUrl(null);
+      setLicenseUrl(response.licenseUrl || null);
     }
   };
 
-  const downloadFile = () => {
-    if (track) {
-      window.open(`${process.env.NEXT_PUBLIC_STRAPI_URL}${track}`, "_blank");
+  const downloadAudio = () => {
+    if (audioUrl) {
+      window.open(`${audioUrl}`, "_blank");
+    }
+  };
+
+  const downloadStems = () => {
+    if (stemsUrl) {
+      window.open(`${stemsUrl}`, "_blank");
+    }
+  };
+
+  const downloadLicense = () => {
+    if (licenseUrl) {
+      fetch(licenseUrl, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+        },
+      })
+        .then((response) => response.blob())
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "license.pdf";
+          a.click();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+          console.error("Error downloading license:", error);
+        });
     }
   };
 
@@ -107,13 +144,54 @@ const StemsPurchaseModal: React.FC<StemsPurchaseModalProps> = ({
                     files. You can also access your downloads from your account
                     at any time.
                   </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary w-100 text-white"
-                    onClick={downloadFile}
-                  >
-                    Download Files
-                  </button>
+                  {stemsUrl ? (
+                    <div className="d-flex gap-3 flex-column flex-md-row">
+                      {audioUrl && (
+                        <button
+                          type="button"
+                          className="btn btn-primary w-100 text-white"
+                          onClick={downloadAudio}
+                        >
+                          Download Audio
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-outline-light w-100"
+                        onClick={downloadStems}
+                      >
+                        Download Stems
+                      </button>
+                      {licenseUrl && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-light w-100"
+                          onClick={downloadLicense}
+                        >
+                          Download License
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="d-flex gap-3 flex-column flex-md-row">
+                      <button
+                        type="button"
+                        className="btn btn-primary w-100 text-white"
+                        onClick={downloadAudio}
+                      >
+                        Download Audio
+                      </button>
+                      {licenseUrl && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-light w-100"
+                          onClick={downloadLicense}
+                        >
+                          Download License
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -128,26 +206,40 @@ const StemsPurchaseModal: React.FC<StemsPurchaseModalProps> = ({
                   >
                     <RiFolderMusicLine size={36} className="text-primary" />
                   </span>
-                  <p className="text-white">
-                    Would you like to include the stems for an additional 5
-                    credits?
-                  </p>
-                  <div className="d-flex justify-content-between gap-3 mt-4 flex-column flex-md-row">
-                    <button
-                      type="button"
-                      className="w-100 h-auto btn btn-primary text-white mb-3 mb-md-0"
-                      onClick={handlePurchaseWithStems}
-                    >
-                      Yes, include stems
-                    </button>
-                    <button
-                      type="button"
-                      className="w-100 btn btn-outline-light"
-                      onClick={handlePurchaseAudioOnly}
-                    >
-                      No thanks, purchase audio only
-                    </button>
-                  </div>
+                  {showOnlyStemsOption ? (
+                    <div className="d-flex justify-content-between gap-3 mt-4 flex-column flex-md-row">
+                      <button
+                        type="button"
+                        className="w-100 h-auto btn btn-primary text-white"
+                        onClick={handlePurchaseWithStems}
+                      >
+                        Buy Stems (5 credits)
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-white">
+                        Would you like to include the stems for an additional 5
+                        credits?
+                      </p>
+                      <div className="d-flex justify-content-between gap-3 mt-4 flex-column flex-md-row">
+                        <button
+                          type="button"
+                          className="w-100 h-auto btn btn-primary text-white mb-3 mb-md-0"
+                          onClick={handlePurchaseWithStems}
+                        >
+                          Yes, include stems
+                        </button>
+                        <button
+                          type="button"
+                          className="w-100 btn btn-outline-light"
+                          onClick={handlePurchaseAudioOnly}
+                        >
+                          No thanks, purchase audio only
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>

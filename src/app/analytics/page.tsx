@@ -1,22 +1,22 @@
 "use client";
 
 // Modules
-import { useState, useEffect } from "react";
-import { Bar } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  PointElement,
-  LineElement,
 } from "chart.js";
+import { useEffect, useState } from "react";
+import { Bar } from "react-chartjs-2";
 
 // Components
-import { Table, Button, Dropdown, DropdownButton, Form } from "react-bootstrap";
+import { Dropdown, DropdownButton, Form, Table } from "react-bootstrap";
 import { toast } from "react-toastify";
 
 // Register ChartJS Components
@@ -35,7 +35,7 @@ interface User {
   id: number;
   credits: number;
   totalIncome: number;
-  total_withdrawn: number;
+  total_withdraw: number;
   tracks: any[];
   totalCredits?: number; // Add totalCredits property
 }
@@ -60,22 +60,22 @@ interface Track {
         id: number;
         attributes: {
           username: string;
-        }
-      }
-    }
+        };
+      };
+    };
     cover: {
       data: {
         attributes: {
           formats: {
             thumbnail: {
               url: string;
-            }
-          }
+            };
+          };
           url: string;
-        }
-      }
-    }
-  }
+        };
+      };
+    };
+  };
 }
 
 export default function AnalyticsPage() {
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [trackCount, setTrackCount] = useState(0);
   const [soundKitCount, setSoundKitCount] = useState(0);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -144,8 +144,6 @@ export default function AnalyticsPage() {
       setTrackCount(regularTracks.length);
       setSoundKitCount(soundKits.length);
     }
-
-    
   }, [user?.id]);
 
   useEffect(() => {
@@ -155,11 +153,11 @@ export default function AnalyticsPage() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('jwt')}`
           }
-        });
+        );
         const data = await response.json();
         console.log('User data:', data);
         console.log('User tracks:', data.tracks);
-        
+
         // Calculate total credits directly when setting user data
         if (data.tracks && Array.isArray(data.tracks)) {
           let totalCredits = 0;
@@ -172,11 +170,12 @@ export default function AnalyticsPage() {
           // Add the total credits to the user object
           data.totalCredits = totalCredits;
         }
-        
+
         setUser(data);
+        setPendingAmount(data.pending_amount);
       } catch (error) {
-        console.error('Error fetching user:', error);
-        setError('Failed to load user data');
+        console.error("Error fetching user:", error);
+        setError("Failed to load user data");
       }
     };
     fetchUser();
@@ -188,12 +187,13 @@ export default function AnalyticsPage() {
       return;
     }
 
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_STRAPI_URL}/api/users/${user.id}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/withdraw`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
         },
         body: JSON.stringify({
           total_withdrawn: (user.total_withdrawn || 0) + incomeEarned,
@@ -217,8 +217,8 @@ export default function AnalyticsPage() {
         toast.success('Withdrawal processed successfully!');
       }
     } catch (error) {
-      console.error('Error during withdrawal:', error);
-      setError('Failed to process withdrawal');
+      console.error("Error during withdrawal:", error);
+      setError("Failed to process withdrawal");
     }
   };
 
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
   const totalTrackCredits = user?.totalCredits || (user?.tracks || []).reduce((sum, track) => {
     // Try to get credits from different possible locations in the track object
     let credits = 0;
-    
+
     if (track.credits_earned !== undefined) {
       credits = track.credits_earned;
     } else if (track.credits !== undefined) {
@@ -253,15 +253,15 @@ export default function AnalyticsPage() {
     } else if (track.attributes && track.attributes.credits !== undefined) {
       credits = track.attributes.credits;
     }
-    
+
     // Convert to number and add to sum
     const numCredits = Number(credits) || 0;
     console.log('Track:', track.title, 'Credits found:', numCredits);
     return sum + numCredits;
   }, 0);
-  
+
   console.log('Final total track credits:', totalTrackCredits);
-  
+
   // Calculate total income (10% of credits)
   const totalTrackIncome = totalTrackCredits * 0.10;
   console.log('Final total track income:', totalTrackIncome);
@@ -276,7 +276,7 @@ export default function AnalyticsPage() {
   const displayCredits = Number(totalTrackCredits) || 0;
   // Use incomeEarned state variable for display instead of totalTrackIncome
   const displayIncome = Number(incomeEarned) || 0;
-  
+
   const summaryData = [
     { label: "Tracks", value: (user?.tracks?.length || 0).toString(), change: "0%" },
     { label: "Credits", value: displayCredits.toString(), change: "0%" },
@@ -314,40 +314,40 @@ export default function AnalyticsPage() {
       );
       chartDataCounts = dateArr.map(d => {
         const dateStr = d.toISOString().split('T')[0];
-        
+
         // Filter tracks for this date
         const tracksOnDate = filteredTracks.filter(track =>
           track.createdAt && new Date(track.createdAt).toISOString().split('T')[0] === dateStr
         );
-        
+
         // Return different data based on activeMetric
         switch (activeMetric) {
           case "Tracks":
             // Count tracks uploaded on this date, divide by 10 for chart scaling
             return tracksOnDate.length / 10;
-          
+
           case "Credits":
             // Sum credits for tracks on this date
             return tracksOnDate.reduce((sum, track) => {
               const credits = Number(track.credits_earned || track.credits || 0);
               return sum + credits;
             }, 0) / 100; // Scale down for chart
-          
+
           case "Income Earned":
             // Sum income (10% of credits) for tracks on this date
             return tracksOnDate.reduce((sum, track) => {
               const credits = Number(track.credits_earned || track.credits || 0);
               return sum + (credits * 0.1);
             }, 0) / 10; // Scale down for chart
-          
+
           case "Amount Pending":
             // Show pending amount (only for current date if there is any)
             return dateStr === new Date().toISOString().split('T')[0] ? pendingAmount / 10 : 0;
-          
+
           case "Total Withdrawn":
             // Show total withdrawn (accumulated over time)
             return totalWithdrawn / 100; // Scale down for chart
-          
+
           default:
             return tracksOnDate.length / 10;
         }
@@ -356,6 +356,7 @@ export default function AnalyticsPage() {
   }
 
   const chartData = {
+    labels: chartLabels,
     labels: chartLabels,
     datasets: [
       {
@@ -463,12 +464,12 @@ export default function AnalyticsPage() {
   return (
     <div className="container">
       <div className="analytics-container mt-5 py-5">
-      <h2 className="mb-4">Analytics & Earnings</h2>
-      {error && (
-        <div className="alert alert-danger mb-4" role="alert">
-          {error}
-        </div>
-      )}
+        <h2 className="mb-4">Analytics & Earnings</h2>
+        {error && (
+          <div className="alert alert-danger mb-4" role="alert">
+            {error}
+          </div>
+        )}
 
       {/* Date Range Filter */}
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -570,7 +571,7 @@ export default function AnalyticsPage() {
                     </div>
                   )}
                 </div>
-          
+
                 {/* Mobile-only Chart Row - Shown only on mobile */}
                 <div className="row d-lg-none mb-4">
                   <div className="col-12">
@@ -665,7 +666,7 @@ export default function AnalyticsPage() {
           )}
         </tbody>
       </Table>
-      
+
       {/* Pagination Controls */}
       {user?.tracks && user.tracks.filter(track =>
         track.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -689,7 +690,7 @@ export default function AnalyticsPage() {
             </select>
             <span className="ms-2">per page</span>
           </div>
-          
+
           <div className="pagination-controls">
             <button
               className="btn btn-sm btn-outline-secondary me-1"
@@ -698,13 +699,13 @@ export default function AnalyticsPage() {
             >
               Previous
             </button>
-            
+
             <span className="mx-2">
               Page {currentPage} of {Math.ceil(user.tracks.filter(track =>
                 track.title.toLowerCase().includes(searchTerm.toLowerCase())
               ).length / itemsPerPage) || 1}
             </span>
-            
+
             <button
               className="btn btn-sm btn-outline-secondary ms-1"
               onClick={() => setCurrentPage(prev =>

@@ -14,7 +14,10 @@ import PlayButton from "./audio-player/play";
 import StemsPurchaseModal from "./modals/stems-purchase-modal";
 
 // Utilities
-import { InfoType } from "@/core/types";
+import {
+  fetchTrackPurchaseStatus,
+  getTrackOwnershipStatus,
+} from "@/core/utils/track-helpers";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -70,8 +73,16 @@ const TrackList: React.FC<TrackListProps> = ({
   const [audioDuration, setAudioDuration] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement>(null);
   const [showStemsModal, setShowStemsModal] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState<{
+    hasAudio: boolean;
+    hasStems: boolean;
+  }>({ hasAudio: false, hasStems: false });
   const user = useSelector((state: RootState) => state.user.user);
   const router = useRouter();
+
+  // Get track ownership status
+  const ownershipStatus = getTrackOwnershipStatus(data, user, purchaseStatus);
+
   useEffect(() => {
     if (duration && data.src) {
       const audio = new Audio(data.src);
@@ -90,6 +101,18 @@ const TrackList: React.FC<TrackListProps> = ({
       };
     }
   }, [duration, data.src]);
+
+  // Load purchase status when user or track changes
+  useEffect(() => {
+    (async () => {
+      if (!user || !data?.id) {
+        setPurchaseStatus({ hasAudio: false, hasStems: false });
+        return;
+      }
+      const status = await fetchTrackPurchaseStatus(data.id);
+      setPurchaseStatus(status);
+    })();
+  }, [user?.id, data?.id]);
 
   const trackUrl = `/producers/${encodeURIComponent(data.Producers?.[0]?.name?.toLowerCase() || "")}/${encodeURIComponent(data.title?.toLowerCase() || "")}`;
 
@@ -115,48 +138,77 @@ const TrackList: React.FC<TrackListProps> = ({
     }
 
     const responseData = await response.json();
+    // Immediately refresh purchase status so UI updates without reload
+    try {
+      const status = await fetchTrackPurchaseStatus(data.id);
+      setPurchaseStatus(status);
+    } catch (err) {
+      console.warn("Failed to refresh purchase status after purchase", err);
+    }
     return responseData;
+  };
+
+  const handlePurchaseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Don't open modal if track is owned or already purchased
+    if (ownershipStatus.buttonDisabled) {
+      return;
+    }
+
+    setShowStemsModal(true);
   };
 
   return (
     <div className="list__item">
       <div className="list__cover">
-        <div className="ratio ratio-1x1">
-          <Image
-            src={data.cover}
-            width={320}
-            height={320}
-            alt={data.title ? data.title : data.name}
-          />
-        </div>
-
-        {play && (
-          <PlayButton className="p-2 border-0" iconSize={16} track={data} />
-        )}
-      </div>
-
-      <div className="list__content text-white">
-        {number && <span className="list__number me-3">{number}.</span>}
         <Link
           href={trackUrl}
-          className="list__title text-truncate text-white text-decoration-none hover-underline"
+          className="d-block ratio ratio-1x1"
+          style={{ width: "100%", height: "100%" }}
         >
-          {data.title ? data.title : data.name}
+          <Image
+            src={data.cover}
+            width={80}
+            height={80}
+            alt={data.title}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "0.5rem",
+            }}
+          />
         </Link>
-        {data.Producers && (
-          <div className="list__subtitle text-truncate text-white">
-            {data.Producers.map((producer: InfoType, index: number) => (
-              <Link
-                key={index}
-                href={`/producers/${encodeURIComponent(producer.name.toLowerCase())}`}
-                className="text-secondary text-decoration-none hover-underline"
-              >
-                {producer.name}
-                {data.Producers.length - 1 === index ? "" : ", "}
-              </Link>
-            ))}
-          </div>
-        )}
+        {play && <PlayButton track={data} />}
+      </div>
+
+      <div className="list__content">
+        <div className="list__title">
+          <Link
+            href={trackUrl}
+            className={`hover-underline ${replaceClassName("text-dark")}`}
+          >
+            {data.title}
+          </Link>
+          {data.Producers && data.Producers.length > 0 && (
+            <p className="text-muted small">
+              {data.Producers.map((producer: any, index: number) => (
+                <Link
+                  key={index}
+                  href={`/producers/${producer.name?.toLowerCase() || ""}`}
+                  className="hover-underline"
+                >
+                  {producer.name}
+                  {data.Producers && data.Producers.length - 1 === index
+                    ? ""
+                    : ", "}
+                </Link>
+              ))}
+            </p>
+          )}
+        </div>
       </div>
 
       <ul className="list__option text-white">
@@ -172,21 +224,22 @@ const TrackList: React.FC<TrackListProps> = ({
             <ul className="dropdown-menu dropdown-menu-sm bg-dark">
               {download && (
                 <li>
-                  {data.purchased ? (
+                  {ownershipStatus.isPurchased ? (
                     <button className="dropdown-item text-white menu-item-hover">
                       <RiDownloadLine size={18} className="me-1" />
                       Download
                     </button>
+                  ) : ownershipStatus.isOwned ? (
+                    <button className="dropdown-item text-white menu-item-hover disabled">
+                      <RiDownloadLine size={18} className="me-1" />
+                      Owned
+                    </button>
                   ) : (
                     <button
                       className="dropdown-item text-white menu-item-hover"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowStemsModal(true);
-                      }}
+                      onClick={handlePurchaseClick}
                     >
-                      Purchase Sample
+                      {ownershipStatus.buttonText}
                     </button>
                   )}
                 </li>
@@ -213,13 +266,26 @@ const TrackList: React.FC<TrackListProps> = ({
         .hover-underline:hover {
           text-decoration: underline !important;
         }
+        .dropdown-item.disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
       `}</style>
 
       <StemsPurchaseModal
         isOpen={showStemsModal}
         onClose={() => setShowStemsModal(false)}
-        onPurchaseWithStems={() => handlePurchase(7.5)}
-        onPurchaseAudioOnly={() => handlePurchase(2.5)}
+        onPurchaseWithStems={() =>
+          handlePurchase(
+            purchaseStatus.hasAudio && !purchaseStatus.hasStems ? 5 : 7.5
+          )
+        }
+        onPurchaseAudioOnly={
+          purchaseStatus.hasAudio ? undefined : () => handlePurchase(2.5)
+        }
+        showOnlyStemsOption={
+          purchaseStatus.hasAudio && !purchaseStatus.hasStems
+        }
       />
     </div>
   );

@@ -5,6 +5,10 @@ import TrackDropdown from "@/core/components/dropdown";
 import LoadingSpinner from "@/core/components/loading-spinner";
 import StemsPurchaseModal from "@/core/components/modals/stems-purchase-modal";
 import { InfoType } from "@/core/types";
+import {
+  fetchTrackPurchaseStatus,
+  getTrackOwnershipStatus,
+} from "@/core/utils/track-helpers";
 import { useTracks } from "@/redux/hooks";
 import { RootState } from "@/redux/store";
 import Image from "next/image";
@@ -35,7 +39,12 @@ const SamplePage = () => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showStemsModal, setShowStemsModal] = useState(false);
+  const [purchaseStatus, setPurchaseStatus] = useState<{
+    hasAudio: boolean;
+    hasStems: boolean;
+  }>({ hasAudio: false, hasStems: false });
   const router = useRouter();
+  const user = useSelector((state: RootState) => state.user.user);
 
   const track = tracks?.find(
     (t: any) =>
@@ -47,6 +56,9 @@ const SamplePage = () => {
           decodeURIComponent(slug as string).toLowerCase()
       )
   );
+
+  // Derive ownership/purchase CTA state
+  const ownershipStatus = getTrackOwnershipStatus(track, user, purchaseStatus);
 
   const handlePlay = () => {
     if (wavesurfer.current) {
@@ -71,7 +83,6 @@ const SamplePage = () => {
   const handlePurchase = async (amount: any) => {
     if (!track) return { success: false, message: "No track found" };
     // Check if user is logged in
-    const user = useSelector((state: RootState) => state.user.user);
     if (!user) {
       router.push("/auth/login");
       return { success: false, message: "User not logged in" };
@@ -85,10 +96,34 @@ const SamplePage = () => {
         jwt: localStorage.getItem("jwt"),
       }),
     });
+    if (!response.ok) {
+      throw new Error("Failed to purchase sample");
+    }
+
     const data = await response.json();
+
+    // Immediately refresh purchase status so UI updates without reload
+    try {
+      const status = await fetchTrackPurchaseStatus(track.id);
+      setPurchaseStatus(status);
+    } catch (err) {
+      console.warn("Failed to refresh purchase status after purchase", err);
+    }
 
     return data;
   };
+
+  // Load purchase status for this track
+  useEffect(() => {
+    (async () => {
+      if (!user || !track?.id) {
+        setPurchaseStatus({ hasAudio: false, hasStems: false });
+        return;
+      }
+      const status = await fetchTrackPurchaseStatus(track.id);
+      setPurchaseStatus(status);
+    })();
+  }, [user?.id, track?.id]);
 
   useEffect(() => {
     if (track && waveformRef.current && !wavesurfer.current) {
@@ -274,9 +309,14 @@ const SamplePage = () => {
               <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
                 <button
                   className="btn btn-outline-light px-4"
-                  onClick={() => setShowStemsModal(true)}
+                  onClick={() => {
+                    // If already fully purchased or owned, do nothing
+                    if (ownershipStatus.buttonDisabled) return;
+                    setShowStemsModal(true);
+                  }}
+                  disabled={ownershipStatus.buttonDisabled}
                 >
-                  Purchase Sample
+                  {ownershipStatus.buttonText}
                 </button>
                 <TrackDropdown
                   data={track}
@@ -353,8 +393,17 @@ const SamplePage = () => {
       <StemsPurchaseModal
         isOpen={showStemsModal}
         onClose={() => setShowStemsModal(false)}
-        onPurchaseWithStems={() => handlePurchase(7.5)}
-        onPurchaseAudioOnly={() => handlePurchase(2.5)}
+        onPurchaseWithStems={() =>
+          handlePurchase(
+            purchaseStatus.hasAudio && !purchaseStatus.hasStems ? 5 : 7.5
+          )
+        }
+        onPurchaseAudioOnly={
+          purchaseStatus.hasAudio ? undefined : () => handlePurchase(2.5)
+        }
+        showOnlyStemsOption={
+          purchaseStatus.hasAudio && !purchaseStatus.hasStems
+        }
       />
     </React.Fragment>
   );
